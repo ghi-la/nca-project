@@ -17,3 +17,7 @@ ssh <short>.usi.ch@@bre.usi.ch
 ```bash
 rsync -avz --exclude .git --exclude .venv ./scratch/ <user>@usi.ch@bre.usi.ch:~/scratch/
 ```
+- Sync local folder with actual scratch folder on server:
+```bash
+rsync -avz --exclude .git --exclude .venv ./scratch/ <user>@usi.ch@bre.usi.ch:/scratch/nca-course/$USER
+```
