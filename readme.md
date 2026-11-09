@@ -26,3 +26,10 @@ rsync -avz --exclude .git --exclude .venv ./scratch/ <user>@usi.ch@bre.usi.ch:~/
 ```bash
 rsync -avz --exclude .git --exclude .venv ./scratch/ <user>@usi.ch@bre.usi.ch:/scratch/nca-course/$USER
 ```
+
+- Load the OpenAI API key (server or client, as you need):
+```bash
+echo 'export OPENAI_API_KEY=<your_api_key>' > ~/.nca_openai
+chmod 600 ~/.nca_openai
+source ~/.nca_openai
+```
