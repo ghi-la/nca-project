@@ -1,0 +1,10 @@
+2026-11-15 14:58:36,062 - minisweagent - INFO - Loading dataset princeton-nlp/SWE-Bench_Verified, split test...
+2026-11-15 14:58:38,352 - minisweagent - INFO - Instance filter: 500 -> 2 instances
+2026-11-15 14:58:38,353 - minisweagent - INFO - Running on 2 instances...
+2026-11-15 14:58:38,354 - minisweagent - INFO - Building agent config from specs: ['swebench.yaml', 'model.model_kwargs.reasoning_effort=low', 'agent.step_limit=75', 'agent.cost_limit=0.30']
+2026-11-15 14:58:39,516 - minisweagent.environment - DEBUG - Starting container with command: docker run -d --name minisweagent-fe7d114f -w /testbed --rm docker.io/swebench/sweb.eval.x86_64.astropy_1776_astropy-12907:latest sleep 2h
+2026-11-15 14:58:39,516 - minisweagent.environment - DEBUG - Starting container with command: docker run -d --name minisweagent-af933475 -w /testbed --rm docker.io/swebench/sweb.eval.x86_64.django_1776_django-11099:latest sleep 2h
+2026-11-15 14:59:33,564 - minisweagent.environment - INFO - Started container minisweagent-fe7d114f with ID 2c7c7f068a1b10aebb7cf358c9dd7668fdd02a06114cd5c5615858d03867ec1c
+2026-11-15 14:59:33,568 - minisweagent.environment - INFO - Started container minisweagent-af933475 with ID 62dcce107c682db9c6e734c0c9a7a355f11ab8af760c50098c2d67c13c658a6c
+2026-11-15 14:59:54,394 - minisweagent - INFO - Saved trajectory to '/Users/fireblast/3rd_Semester/NCA/nca-project/local/runs/luna_pilot/django__django-11099/django__django-11099.traj.json'
+2026-11-15 14:59:57,655 - minisweagent - INFO - Saved trajectory to '/Users/fireblast/3rd_Semester/NCA/nca-project/local/runs/luna_pilot/astropy__astropy-12907/astropy__astropy-12907.traj.json'

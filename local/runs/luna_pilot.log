@@ -1,0 +1,74 @@
+== Config
+  model=openai/gpt-6-luna effort=low temperature='' verbosity='' steps=75
+  cost: $0.30/instance, $1.00 cap per iteration, iterations=1
+  subset=verified split=test filter='^(django__django-11099|astropy__astropy-12907)$' slice='' workers=2
+  out=/Users/fireblast/3rd_Semester/NCA/nca-project/local/runs/luna_pilot  eval=1
+--------- Iteration 1/1 ---------
+== Inference command
+  /Users/fireblast/3rd_Semester/NCA/tools/mini-swe-agent/.venv/bin/mini-extra  swebench  -c  swebench.yaml  -m  openai/gpt-6-luna  -c  model.model_kwargs.reasoning_effort=low  -c  agent.step_limit=75  -c  agent.cost_limit=0.30  --subset  verified  --split  test  -w  2  --environment-class  docker  -o  /Users/fireblast/3rd_Semester/NCA/nca-project/local/runs/luna_pilot  --filter  \^\(django__django-11099\|astropy__astropy-12907\)\$
+== Eval command
+  /Users/fireblast/3rd_Semester/NCA/tools/SWE-bench/.venv/bin/swebench  eval  verified  -p  /Users/fireblast/3rd_Semester/NCA/nca-project/local/runs/luna_pilot/preds.json  --run-id  luna_pilot_20261115_145835  -j  2  --task-repo  /Users/fireblast/3rd_Semester/NCA/tools/SWE-bench/swe-bench-tasks
+👋 This is mini-swe-agent version 2.2.8.
+Check the v2 migration guide at https://klieret.short.gy/mini-v2-migration
+Loading global config from '/Users/fireblast/Library/Application 
+Support/mini-swe-agent/.env'
+Global cost/call limit: $1.0000 / 0
+minisweagent: INFO: Results will be saved to                                    
+/Users/fireblast/3rd_Semester/NCA/nca-project/local/runs/luna_pilot             
+Logging to '/Users/fireblast/3rd_Semester/NCA/nca-project/local/runs/luna_pilot/minisweagent.log'
+minisweagent: INFO: Loading dataset princeton-nlp/SWE-Bench_Verified, split     
+test...                                                                         
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+minisweagent: INFO: Instance filter: 500 -> 2 instances                         
+minisweagent: INFO: Running on 2 instances...                                   
+minisweagent: INFO: Building agent config from specs: ['swebench.yaml',         
+'model.model_kwargs.reasoning_effort=low', 'agent.step_limit=75',               
+'agent.cost_limit=0.30']                                                        
+minisweagent.environment: DEBUG: Starting container with command: docker run -d 
+--name minisweagent-fe7d114f -w /testbed --rm                                   
+docker.io/swebench/sweb.eval.x86_64.astropy_1776_astropy-12907:latest sleep 2h  
+minisweagent.environment: DEBUG: Starting container with command: docker run -d 
+--name minisweagent-af933475 -w /testbed --rm                                   
+docker.io/swebench/sweb.eval.x86_64.django_1776_django-11099:latest sleep 2h    
+minisweagent.environment: INFO: Started container minisweagent-fe7d114f with ID 
+2c7c7f068a1b10aebb7cf358c9dd7668fdd02a06114cd5c5615858d03867ec1c                
+minisweagent.environment: INFO: Started container minisweagent-af933475 with ID 
+62dcce107c682db9c6e734c0c9a7a355f11ab8af760c50098c2d67c13c658a6c                
+minisweagent: INFO: Saved trajectory to                                         
+'/Users/fireblast/3rd_Semester/NCA/nca-project/local/runs/luna_pilot/django__dja
+ngo-11099/django__django-11099.traj.json'                                       
+minisweagent: INFO: Saved trajectory to                                         
+'/Users/fireblast/3rd_Semester/NCA/nca-project/local/runs/luna_pilot/astropy__as
+tropy-12907/astropy__astropy-12907.traj.json'                                   
+  Overall Progress ($0.00) ━━━━━━━━━━━━━━━━━━━━━━━ 2/2 100% 0:01:19 eta: 0:00:00
+┏━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Exit Status ┃ Count ┃ Most recent instances                                  ┃
+┡━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ Submitted   │     2 │ astropy__astropy-12907, django__django-11099           │
+└─────────────┴───────┴────────────────────────────────────────────────────────┘Inference time: 83 s
+instance                                        cost $  calls  exit_status
+astropy__astropy-12907                          0.0014      8  Submitted
+django__django-11099                            0.0010      7  Submitted
+TOTAL 2 instances: $0.0024  mean $0.0012/instance
+Building 2 image(s) from /Users/fireblast/3rd_Semester/NCA/tools/SWE-bench/swe-bench-tasks before evaluating...
+  0%|          | 0/2 [00:00<?, ?it/s] 50%|█████     | 1/2 [02:33<02:33, 153.58s/it]1 ran successfully, 0 failed:  50%|█████     | 1/2 [02:33<02:33, 153.58s/it]1 ran successfully, 0 failed: 100%|██████████| 2/2 [03:30<00:00, 105.09s/it]2 ran successfully, 0 failed: 100%|██████████| 2/2 [03:30<00:00, 105.09s/it]2 ran successfully, 0 failed: 100%|██████████| 2/2 [03:30<00:00, 105.09s/it]
+All instance images built successfully.
+Built 2 image(s) locally; none pulled.
+Running 2 instances...
+  0%|          | 0/2 [00:00<?, ?it/s] 50%|█████     | 1/2 [00:32<00:32, 32.78s/it]1 ran successfully, 0 failed:  50%|█████     | 1/2 [00:32<00:32, 32.78s/it]1 ran successfully, 0 failed: 100%|██████████| 2/2 [01:49<00:00, 54.86s/it]2 ran successfully, 0 failed: 100%|██████████| 2/2 [01:49<00:00, 54.86s/it]2 ran successfully, 0 failed: 100%|██████████| 2/2 [01:49<00:00, 54.86s/it]
+All instances run.
+Total instances: 2294
+Instances submitted: 2
+Instances completed: 2
+Instances incomplete: 2292
+Instances resolved: 2
+Instances unresolved: 0
+Instances with likely infrastructure failures: 0
+Instances with ambiguous failures: 0
+Instances with empty patches: 0
+Instances with errors: 0
+Unstopped containers: 0
+Unremoved images: 3
+Report written to logs/evaluation/luna_pilot_20261115_145835/results.json
+Results copied to /Users/fireblast/3rd_Semester/NCA/nca-project/local/runs/luna_pilot/results_luna_pilot_20261115_145835.json
+Evaluation time: 325 s

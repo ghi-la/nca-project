@@ -1,0 +1,65 @@
+== Config
+  model=openai/gpt-6-luna effort=low temperature='' verbosity='' steps=75
+  cost: $0.30/instance, $0.50 cap per iteration, iterations=1
+  subset=verified split=test filter='^sympy__sympy-20590$' slice='' workers=2
+  out=/Users/fireblast/3rd_Semester/NCA/nca-project/local/runs/luna_single  eval=1
+--------- Iteration 1/1 ---------
+== Inference command
+  /Users/fireblast/3rd_Semester/NCA/tools/mini-swe-agent/.venv/bin/mini-extra  swebench  -c  swebench.yaml  -m  openai/gpt-6-luna  -c  model.model_kwargs.reasoning_effort=low  -c  agent.step_limit=75  -c  agent.cost_limit=0.30  --subset  verified  --split  test  -w  2  --environment-class  docker  -o  /Users/fireblast/3rd_Semester/NCA/nca-project/local/runs/luna_single  --filter  \^sympy__sympy-20590\$
+== Eval command
+  /Users/fireblast/3rd_Semester/NCA/tools/SWE-bench/.venv/bin/swebench  eval  verified  -p  /Users/fireblast/3rd_Semester/NCA/nca-project/local/runs/luna_single/preds.json  --run-id  luna_single_20261115_145635  -j  2  --task-repo  /Users/fireblast/3rd_Semester/NCA/tools/SWE-bench/swe-bench-tasks
+👋 This is mini-swe-agent version 2.2.8.
+Check the v2 migration guide at https://klieret.short.gy/mini-v2-migration
+Loading global config from '/Users/fireblast/Library/Application 
+Support/mini-swe-agent/.env'
+Global cost/call limit: $0.5000 / 0
+minisweagent: INFO: Results will be saved to                                    
+/Users/fireblast/3rd_Semester/NCA/nca-project/local/runs/luna_single            
+Logging to '/Users/fireblast/3rd_Semester/NCA/nca-project/local/runs/luna_single/minisweagent.log'
+minisweagent: INFO: Loading dataset princeton-nlp/SWE-Bench_Verified, split     
+test...                                                                         
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+minisweagent: INFO: Instance filter: 500 -> 1 instances                         
+minisweagent: INFO: Running on 1 instances...                                   
+minisweagent: INFO: Building agent config from specs: ['swebench.yaml',         
+'model.model_kwargs.reasoning_effort=low', 'agent.step_limit=75',               
+'agent.cost_limit=0.30']                                                        
+minisweagent.environment: DEBUG: Starting container with command: docker run -d 
+--name minisweagent-a5cbe9d3 -w /testbed --rm                                   
+docker.io/swebench/sweb.eval.x86_64.sympy_1776_sympy-20590:latest sleep 2h      
+minisweagent.environment: INFO: Started container minisweagent-a5cbe9d3 with ID 
+f0c5a2b541e1f2544a35ea380de35ba94de2d5471f2d440779d8cd225276d359                
+minisweagent: INFO: Saved trajectory to                                         
+'/Users/fireblast/3rd_Semester/NCA/nca-project/local/runs/luna_single/sympy__sym
+py-20590/sympy__sympy-20590.traj.json'                                          
+  Overall Progress ($0.00) ━━━━━━━━━━━━━━━━━━━━━━━ 1/1 100% 0:00:44 eta: 0:00:00
+┏━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Exit Status ┃ Count ┃ Most recent instances                                  ┃
+┡━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ Submitted   │     1 │ sympy__sympy-20590                                     │
+└─────────────┴───────┴────────────────────────────────────────────────────────┘Inference time: 48 s
+instance                                        cost $  calls  exit_status
+sympy__sympy-20590                              0.0023     12  Submitted
+TOTAL 1 instances: $0.0023  mean $0.0023/instance
+Building 1 image(s) from /Users/fireblast/3rd_Semester/NCA/tools/SWE-bench/swe-bench-tasks before evaluating...
+  0%|          | 0/1 [00:00<?, ?it/s]100%|██████████| 1/1 [00:01<00:00,  1.45s/it]1 ran successfully, 0 failed: 100%|██████████| 1/1 [00:01<00:00,  1.45s/it]1 ran successfully, 0 failed: 100%|██████████| 1/1 [00:01<00:00,  1.45s/it]
+All instance images built successfully.
+Built 1 image(s) locally; none pulled.
+Running 1 instances...
+  0%|          | 0/1 [00:00<?, ?it/s]100%|██████████| 1/1 [00:27<00:00, 27.90s/it]1 ran successfully, 0 failed: 100%|██████████| 1/1 [00:27<00:00, 27.90s/it]1 ran successfully, 0 failed: 100%|██████████| 1/1 [00:27<00:00, 27.90s/it]
+All instances run.
+Total instances: 2294
+Instances submitted: 1
+Instances completed: 1
+Instances incomplete: 2293
+Instances resolved: 1
+Instances unresolved: 0
+Instances with likely infrastructure failures: 0
+Instances with ambiguous failures: 0
+Instances with empty patches: 0
+Instances with errors: 0
+Unstopped containers: 0
+Unremoved images: 1
+Report written to logs/evaluation/luna_single_20261115_145635/results.json
+Results copied to /Users/fireblast/3rd_Semester/NCA/nca-project/local/runs/luna_single/results_luna_single_20261115_145635.json
+Evaluation time: 34 s

@@ -1,0 +1,4 @@
+instance                                        cost $  calls  exit_status
+astropy__astropy-12907                          0.0014      8  Submitted
+django__django-11099                            0.0010      7  Submitted
+TOTAL 2 instances: $0.0024  mean $0.0012/instance
