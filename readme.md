@@ -8,7 +8,7 @@
 - Connect to the server via SSH:
 
 ```bash
-ssh <short>.usi.ch@@bre.usi.ch
+ssh <short>@usi.ch@bre.usi.ch
 ```
 
 - Ask Sasha to access folder (Matteo has no access to it):
