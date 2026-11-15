@@ -1,0 +1,15 @@
+PrefectHQ/fastmcp
+agentscope-ai/agentscope
+scrapy/scrapy
+openai/openai-agents-python
+crewAIInc/crewAI
+PrefectHQ/prefect
+modelcontextprotocol/python-sdk
+deepset-ai/haystack
+celery/celery
+psf/black
+roboflow/supervision
+BerriAI/litellm
+stanfordnlp/dspy
+pypa/pipenv
+python-poetry/poetry

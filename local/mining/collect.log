@@ -1,0 +1,228 @@
+Will save PR data to /Users/ghila/USI/NCA/nca-project/local/mining/prs
+Will save task instance data to /Users/ghila/USI/NCA/nca-project/local/mining/tasks
+Received following repos to create task instances for: ['PrefectHQ/fastmcp', 'agentscope-ai/agentscope', 'scrapy/scrapy', 'openai/openai-agents-python', 'crewAIInc/crewAI', 'PrefectHQ/prefect', 'modelcontextprotocol/python-sdk', 'deepset-ai/haystack', 'celery/celery', 'psf/black', 'roboflow/supervision', 'BerriAI/litellm', 'stanfordnlp/dspy', 'pypa/pipenv', 'python-poetry/poetry']
+2026-11-15 12:18:28,891 - swebench.collect.utils - INFO - [PrefectHQ/fastmcp] Processed page 1 (100 values per page). Remaining calls: 4342
+2026-11-15 12:19:57,294 - swebench.collect.utils - INFO - [PrefectHQ/fastmcp] Processed page 2 (100 values per page). Remaining calls: 4141
+2026-11-15 12:21:27,885 - swebench.collect.utils - INFO - [PrefectHQ/fastmcp] Processed page 3 (100 values per page). Remaining calls: 3940
+2026-11-15 12:21:29,810 - swebench.collect.build_dataset - INFO - Will skip 0 pull requests that have already been inspected
+2026-11-15 12:21:29,811 - swebench.collect.build_dataset - INFO - [PrefectHQ/fastmcp] (Up to 0 checked) 0 valid, 0 with tests.
+2026-11-15 12:23:17,241 - swebench.collect.build_dataset - INFO - [PrefectHQ/fastmcp] (Up to 100 checked) 23 valid, 22 with tests.
+2026-11-15 12:24:49,330 - swebench.collect.build_dataset - INFO - [PrefectHQ/fastmcp] (Up to 200 checked) 59 valid, 53 with tests.
+2026-11-15 12:26:04,519 - swebench.collect.build_dataset - INFO - [PrefectHQ/fastmcp] (Up to 300 checked) 92 valid, 85 with tests.
+2026-11-15 12:26:04,519 - swebench.collect.build_dataset - INFO - [PrefectHQ/fastmcp] Total instances: 301, completed: 92, with tests: 85
+2026-11-15 12:26:04,520 - swebench.collect.build_dataset - INFO - [PrefectHQ/fastmcp] Skipped 0 pull requests that have already been inspected
+2026-11-15 12:27:32,258 - swebench.collect.utils - INFO - [agentscope-ai/agentscope] Processed page 1 (100 values per page). Remaining calls: 3144
+2026-11-15 12:29:00,269 - swebench.collect.utils - INFO - [agentscope-ai/agentscope] Processed page 2 (100 values per page). Remaining calls: 2943
+2026-11-15 12:30:27,394 - swebench.collect.utils - INFO - [agentscope-ai/agentscope] Processed page 3 (100 values per page). Remaining calls: 2742
+2026-11-15 12:30:29,808 - swebench.collect.build_dataset - INFO - Will skip 0 pull requests that have already been inspected
+2026-11-15 12:30:29,809 - swebench.collect.build_dataset - INFO - [agentscope-ai/agentscope] (Up to 0 checked) 0 valid, 0 with tests.
+2026-11-15 12:32:45,655 - swebench.collect.build_dataset - INFO - [agentscope-ai/agentscope] (Up to 100 checked) 58 valid, 47 with tests.
+2026-11-15 12:35:07,712 - swebench.collect.build_dataset - INFO - [agentscope-ai/agentscope] (Up to 200 checked) 121 valid, 101 with tests.
+2026-11-15 12:37:19,202 - swebench.collect.build_dataset - INFO - [agentscope-ai/agentscope] (Up to 300 checked) 179 valid, 156 with tests.
+2026-11-15 12:37:21,207 - swebench.collect.build_dataset - INFO - [agentscope-ai/agentscope] Total instances: 301, completed: 180, with tests: 157
+2026-11-15 12:37:21,207 - swebench.collect.build_dataset - INFO - [agentscope-ai/agentscope] Skipped 0 pull requests that have already been inspected
+2026-11-15 12:38:49,844 - swebench.collect.utils - INFO - [scrapy/scrapy] Processed page 1 (100 values per page). Remaining calls: 1683
+2026-11-15 12:40:17,925 - swebench.collect.utils - INFO - [scrapy/scrapy] Processed page 2 (100 values per page). Remaining calls: 1482
+2026-11-15 12:41:43,419 - swebench.collect.utils - INFO - [scrapy/scrapy] Processed page 3 (100 values per page). Remaining calls: 1281
+2026-11-15 12:41:45,664 - swebench.collect.build_dataset - INFO - Will skip 0 pull requests that have already been inspected
+2026-11-15 12:41:45,665 - swebench.collect.build_dataset - INFO - [scrapy/scrapy] (Up to 0 checked) 0 valid, 0 with tests.
+2026-11-15 12:42:06,496 - swebench.collect.build_dataset - INFO - [scrapy/scrapy] (Up to 100 checked) 7 valid, 7 with tests.
+2026-11-15 12:42:19,910 - swebench.collect.build_dataset - INFO - [scrapy/scrapy] (Up to 200 checked) 12 valid, 12 with tests.
+2026-11-15 12:43:13,603 - swebench.collect.build_dataset - INFO - [scrapy/scrapy] (Up to 300 checked) 33 valid, 29 with tests.
+2026-11-15 12:43:13,604 - swebench.collect.build_dataset - INFO - [scrapy/scrapy] Total instances: 301, completed: 33, with tests: 29
+2026-11-15 12:43:13,604 - swebench.collect.build_dataset - INFO - [scrapy/scrapy] Skipped 0 pull requests that have already been inspected
+2026-11-15 12:44:37,791 - swebench.collect.utils - INFO - [openai/openai-agents-python] Processed page 1 (100 values per page). Remaining calls: 884
+2026-11-15 12:46:05,666 - swebench.collect.utils - INFO - [openai/openai-agents-python] Processed page 2 (100 values per page). Remaining calls: 683
+2026-11-15 12:47:33,146 - swebench.collect.utils - INFO - [openai/openai-agents-python] Processed page 3 (100 values per page). Remaining calls: 481
+2026-11-15 12:47:35,523 - swebench.collect.build_dataset - INFO - Will skip 0 pull requests that have already been inspected
+2026-11-15 12:47:35,523 - swebench.collect.build_dataset - INFO - [openai/openai-agents-python] (Up to 0 checked) 0 valid, 0 with tests.
+2026-11-15 12:47:35,533 - swebench.collect.build_dataset - INFO - [openai/openai-agents-python] (Up to 100 checked) 0 valid, 0 with tests.
+2026-11-15 12:47:35,542 - swebench.collect.build_dataset - INFO - [openai/openai-agents-python] (Up to 200 checked) 0 valid, 0 with tests.
+2026-11-15 12:47:35,549 - swebench.collect.build_dataset - INFO - [openai/openai-agents-python] (Up to 300 checked) 0 valid, 0 with tests.
+2026-11-15 12:47:35,549 - swebench.collect.build_dataset - INFO - [] Total instances: 301, completed: 0, with tests: 0
+2026-11-15 12:47:35,549 - swebench.collect.build_dataset - INFO - [] Skipped 0 pull requests that have already been inspected
+2026-11-15 12:49:03,302 - swebench.collect.utils - INFO - [crewAIInc/crewAI] Processed page 1 (100 values per page). Remaining calls: 276
+2026-11-15 12:50:30,145 - swebench.collect.utils - INFO - [crewAIInc/crewAI] Processed page 2 (100 values per page). Remaining calls: 76
+2026-11-15 12:51:05,151 - swebench.collect.utils - ERROR - [crewAIInc/crewAI] Error processing page 2 w/ token github_pat - HTTP Error 403: Forbidden
+====Error Body====
+{
+	"message": "API rate limit exceeded for user ID 120307489. If you reach out to GitHub Support for help, please include the request ID DD50:B48D:885787:F8DB6C:6AF99CA9 and timestamp 2026-11-15 11:51:05 UTC. For more on scraping GitHub and how it may affect your rights, please review our Terms of Service (https:\/\/docs.github.com\/en\/site-policy\/github-terms\/github-terms-of-service)",
+	"documentation_url": "https://docs.github.com/en/rest/using-the-rest-api/getting-started-with-the-rest-api#rate-limiting",
+	"status": "403"
+}
+
+2026-11-15 12:51:05,406 - swebench.collect.utils - INFO - [crewAIInc/crewAI] Waiting for rate limit reset for token github_pat, checking again in 5 minutes
+2026-11-15 12:56:05,684 - swebench.collect.utils - INFO - [crewAIInc/crewAI] Waiting for rate limit reset for token github_pat, checking again in 5 minutes
+2026-11-15 13:01:05,996 - swebench.collect.utils - INFO - [crewAIInc/crewAI] Waiting for rate limit reset for token github_pat, checking again in 5 minutes
+2026-11-15 13:07:03,266 - swebench.collect.utils - INFO - [crewAIInc/crewAI] Processed page 3 (100 values per page). Remaining calls: 4875
+2026-11-15 13:07:05,796 - swebench.collect.build_dataset - INFO - Will skip 0 pull requests that have already been inspected
+2026-11-15 13:07:05,797 - swebench.collect.build_dataset - INFO - [crewAIInc/crewAI] (Up to 0 checked) 0 valid, 0 with tests.
+2026-11-15 13:07:35,931 - swebench.collect.build_dataset - INFO - [crewAIInc/crewAI] (Up to 100 checked) 12 valid, 10 with tests.
+2026-11-15 13:07:51,771 - swebench.collect.build_dataset - INFO - [crewAIInc/crewAI] (Up to 200 checked) 17 valid, 15 with tests.
+2026-11-15 13:09:07,374 - swebench.collect.build_dataset - INFO - [crewAIInc/crewAI] (Up to 300 checked) 48 valid, 38 with tests.
+2026-11-15 13:09:07,374 - swebench.collect.build_dataset - INFO - [crewAIInc/crewAI] Total instances: 301, completed: 48, with tests: 38
+2026-11-15 13:09:07,375 - swebench.collect.build_dataset - INFO - [crewAIInc/crewAI] Skipped 0 pull requests that have already been inspected
+2026-11-15 13:10:38,099 - swebench.collect.utils - INFO - [PrefectHQ/prefect] Processed page 1 (100 values per page). Remaining calls: 4435
+2026-11-15 13:12:06,071 - swebench.collect.utils - INFO - [PrefectHQ/prefect] Processed page 2 (100 values per page). Remaining calls: 4234
+2026-11-15 13:13:32,000 - swebench.collect.utils - INFO - [PrefectHQ/prefect] Processed page 3 (100 values per page). Remaining calls: 4033
+2026-11-15 13:13:34,452 - swebench.collect.build_dataset - INFO - Will skip 0 pull requests that have already been inspected
+2026-11-15 13:13:34,453 - swebench.collect.build_dataset - INFO - [PrefectHQ/prefect] (Up to 0 checked) 0 valid, 0 with tests.
+2026-11-15 13:14:56,697 - swebench.collect.build_dataset - INFO - [PrefectHQ/prefect] (Up to 100 checked) 37 valid, 34 with tests.
+2026-11-15 13:15:52,891 - swebench.collect.build_dataset - INFO - [PrefectHQ/prefect] (Up to 200 checked) 63 valid, 60 with tests.
+2026-11-15 13:16:34,441 - swebench.collect.build_dataset - INFO - [PrefectHQ/prefect] (Up to 300 checked) 82 valid, 79 with tests.
+2026-11-15 13:16:34,441 - swebench.collect.build_dataset - INFO - [PrefectHQ/prefect] Total instances: 301, completed: 82, with tests: 79
+2026-11-15 13:16:34,442 - swebench.collect.build_dataset - INFO - [PrefectHQ/prefect] Skipped 0 pull requests that have already been inspected
+2026-11-15 13:18:03,548 - swebench.collect.utils - INFO - [modelcontextprotocol/python-sdk] Processed page 1 (100 values per page). Remaining calls: 3471
+2026-11-15 13:19:32,446 - swebench.collect.utils - INFO - [modelcontextprotocol/python-sdk] Processed page 2 (100 values per page). Remaining calls: 3270
+2026-11-15 13:21:02,312 - swebench.collect.utils - INFO - [modelcontextprotocol/python-sdk] Processed page 3 (100 values per page). Remaining calls: 3069
+2026-11-15 13:21:05,085 - swebench.collect.build_dataset - INFO - Will skip 0 pull requests that have already been inspected
+2026-11-15 13:21:05,086 - swebench.collect.build_dataset - INFO - [modelcontextprotocol/python-sdk] (Up to 0 checked) 0 valid, 0 with tests.
+2026-11-15 13:21:22,574 - swebench.collect.build_dataset - INFO - [modelcontextprotocol/python-sdk] (Up to 100 checked) 8 valid, 7 with tests.
+2026-11-15 13:22:11,728 - swebench.collect.build_dataset - INFO - [modelcontextprotocol/python-sdk] (Up to 200 checked) 27 valid, 24 with tests.
+2026-11-15 13:22:26,673 - swebench.collect.build_dataset - INFO - [modelcontextprotocol/python-sdk] (Up to 300 checked) 31 valid, 28 with tests.
+2026-11-15 13:22:26,674 - swebench.collect.build_dataset - INFO - [modelcontextprotocol/python-sdk] Total instances: 301, completed: 31, with tests: 28
+2026-11-15 13:22:26,674 - swebench.collect.build_dataset - INFO - [modelcontextprotocol/python-sdk] Skipped 0 pull requests that have already been inspected
+2026-11-15 13:23:56,257 - swebench.collect.utils - INFO - [deepset-ai/haystack] Processed page 1 (100 values per page). Remaining calls: 2689
+2026-11-15 13:25:27,718 - swebench.collect.utils - INFO - [deepset-ai/haystack] Processed page 2 (100 values per page). Remaining calls: 2488
+2026-11-15 13:27:00,509 - swebench.collect.utils - INFO - [deepset-ai/haystack] Processed page 3 (100 values per page). Remaining calls: 2287
+2026-11-15 13:27:03,213 - swebench.collect.build_dataset - INFO - Will skip 0 pull requests that have already been inspected
+2026-11-15 13:27:03,214 - swebench.collect.build_dataset - INFO - [deepset-ai/haystack] (Up to 0 checked) 0 valid, 0 with tests.
+2026-11-15 13:27:30,335 - swebench.collect.build_dataset - INFO - [deepset-ai/haystack] (Up to 100 checked) 12 valid, 9 with tests.
+2026-11-15 13:28:12,724 - swebench.collect.build_dataset - INFO - [deepset-ai/haystack] (Up to 200 checked) 30 valid, 27 with tests.
+2026-11-15 13:28:53,310 - swebench.collect.build_dataset - INFO - [deepset-ai/haystack] (Up to 300 checked) 48 valid, 45 with tests.
+2026-11-15 13:28:53,311 - swebench.collect.build_dataset - INFO - [deepset-ai/haystack] Total instances: 301, completed: 48, with tests: 45
+2026-11-15 13:28:53,311 - swebench.collect.build_dataset - INFO - [deepset-ai/haystack] Skipped 0 pull requests that have already been inspected
+2026-11-15 13:30:26,256 - swebench.collect.utils - INFO - [celery/celery] Processed page 1 (100 values per page). Remaining calls: 1865
+2026-11-15 13:32:02,327 - swebench.collect.utils - INFO - [celery/celery] Processed page 2 (100 values per page). Remaining calls: 1664
+2026-11-15 13:33:36,896 - swebench.collect.utils - INFO - [celery/celery] Processed page 3 (100 values per page). Remaining calls: 1464
+2026-11-15 13:33:39,285 - swebench.collect.build_dataset - INFO - Will skip 0 pull requests that have already been inspected
+2026-11-15 13:33:39,286 - swebench.collect.build_dataset - INFO - [celery/celery] (Up to 0 checked) 0 valid, 0 with tests.
+2026-11-15 13:34:48,043 - swebench.collect.build_dataset - INFO - [celery/celery] (Up to 100 checked) 26 valid, 23 with tests.
+2026-11-15 13:36:08,152 - swebench.collect.build_dataset - INFO - [celery/celery] (Up to 200 checked) 57 valid, 51 with tests.
+2026-11-15 13:36:49,453 - swebench.collect.build_dataset - INFO - [celery/celery] (Up to 300 checked) 72 valid, 64 with tests.
+2026-11-15 13:36:49,454 - swebench.collect.build_dataset - INFO - [celery/celery] Total instances: 301, completed: 72, with tests: 64
+2026-11-15 13:36:49,454 - swebench.collect.build_dataset - INFO - [celery/celery] Skipped 0 pull requests that have already been inspected
+2026-11-15 13:38:23,855 - swebench.collect.utils - INFO - [psf/black] Processed page 1 (100 values per page). Remaining calls: 901
+2026-11-15 13:39:56,720 - swebench.collect.utils - INFO - [psf/black] Processed page 2 (100 values per page). Remaining calls: 700
+2026-11-15 13:41:29,534 - swebench.collect.utils - INFO - [psf/black] Processed page 3 (100 values per page). Remaining calls: 499
+2026-11-15 13:41:32,724 - swebench.collect.build_dataset - INFO - Will skip 0 pull requests that have already been inspected
+2026-11-15 13:41:32,724 - swebench.collect.build_dataset - INFO - [psf/black] (Up to 0 checked) 0 valid, 0 with tests.
+2026-11-15 13:42:08,722 - swebench.collect.build_dataset - INFO - [psf/black] (Up to 100 checked) 13 valid, 12 with tests.
+2026-11-15 13:44:00,675 - swebench.collect.build_dataset - INFO - [psf/black] (Up to 200 checked) 50 valid, 49 with tests.
+2026-11-15 13:44:58,432 - swebench.collect.build_dataset - INFO - [psf/black] (Up to 300 checked) 67 valid, 61 with tests.
+2026-11-15 13:45:01,202 - swebench.collect.build_dataset - INFO - [psf/black] Total instances: 301, completed: 68, with tests: 62
+2026-11-15 13:45:01,202 - swebench.collect.build_dataset - INFO - [psf/black] Skipped 0 pull requests that have already been inspected
+2026-11-15 13:45:56,729 - swebench.collect.utils - ERROR - [roboflow/supervision] Error processing page 2 w/ token github_pat - HTTP Error 403: Forbidden
+====Error Body====
+{
+	"message": "API rate limit exceeded for user ID 120307489. If you reach out to GitHub Support for help, please include the request ID F4ED:0C42:5A912F:AADA59:6AF9A984 and timestamp 2026-11-15 12:45:56 UTC. For more on scraping GitHub and how it may affect your rights, please review our Terms of Service (https:\/\/docs.github.com\/en\/site-policy\/github-terms\/github-terms-of-service)",
+	"documentation_url": "https://docs.github.com/en/rest/using-the-rest-api/getting-started-with-the-rest-api#rate-limiting",
+	"status": "403"
+}
+
+2026-11-15 13:45:57,010 - swebench.collect.utils - INFO - [roboflow/supervision] Waiting for rate limit reset for token github_pat, checking again in 5 minutes
+2026-11-15 13:50:57,283 - swebench.collect.utils - INFO - [roboflow/supervision] Waiting for rate limit reset for token github_pat, checking again in 5 minutes
+2026-11-15 13:55:57,578 - swebench.collect.utils - INFO - [roboflow/supervision] Waiting for rate limit reset for token github_pat, checking again in 5 minutes
+2026-11-15 14:00:57,851 - swebench.collect.utils - INFO - [roboflow/supervision] Waiting for rate limit reset for token github_pat, checking again in 5 minutes
+2026-11-15 14:05:58,141 - swebench.collect.utils - INFO - [roboflow/supervision] Waiting for rate limit reset for token github_pat, checking again in 5 minutes
+2026-11-15 14:11:46,440 - swebench.collect.utils - INFO - [roboflow/supervision] Processed page 1 (100 values per page). Remaining calls: 4901
+2026-11-15 14:13:22,473 - swebench.collect.utils - INFO - [roboflow/supervision] Processed page 2 (100 values per page). Remaining calls: 4700
+2026-11-15 14:14:59,843 - swebench.collect.utils - INFO - [roboflow/supervision] Processed page 3 (100 values per page). Remaining calls: 4499
+2026-11-15 14:15:02,737 - swebench.collect.build_dataset - INFO - Will skip 0 pull requests that have already been inspected
+2026-11-15 14:15:02,737 - swebench.collect.build_dataset - INFO - [roboflow/supervision] (Up to 0 checked) 0 valid, 0 with tests.
+2026-11-15 14:15:14,466 - swebench.collect.build_dataset - INFO - [roboflow/supervision] (Up to 100 checked) 5 valid, 5 with tests.
+2026-11-15 14:15:37,652 - swebench.collect.build_dataset - INFO - [roboflow/supervision] (Up to 200 checked) 15 valid, 15 with tests.
+2026-11-15 14:16:37,041 - swebench.collect.build_dataset - INFO - [roboflow/supervision] (Up to 300 checked) 39 valid, 37 with tests.
+2026-11-15 14:16:37,041 - swebench.collect.build_dataset - INFO - [roboflow/supervision] Total instances: 301, completed: 39, with tests: 37
+2026-11-15 14:16:37,041 - swebench.collect.build_dataset - INFO - [roboflow/supervision] Skipped 0 pull requests that have already been inspected
+2026-11-15 14:18:07,489 - swebench.collect.utils - INFO - [BerriAI/litellm] Processed page 1 (100 values per page). Remaining calls: 4117
+2026-11-15 14:19:33,498 - swebench.collect.utils - INFO - [BerriAI/litellm] Processed page 2 (100 values per page). Remaining calls: 3916
+2026-11-15 14:20:59,366 - swebench.collect.utils - INFO - [BerriAI/litellm] Processed page 3 (100 values per page). Remaining calls: 3715
+2026-11-15 14:21:01,765 - swebench.collect.build_dataset - INFO - Will skip 0 pull requests that have already been inspected
+2026-11-15 14:21:01,766 - swebench.collect.build_dataset - INFO - [BerriAI/litellm] (Up to 0 checked) 0 valid, 0 with tests.
+2026-11-15 14:21:19,302 - swebench.collect.build_dataset - INFO - [BerriAI/litellm] (Up to 100 checked) 7 valid, 7 with tests.
+2026-11-15 14:21:32,431 - swebench.collect.build_dataset - INFO - [BerriAI/litellm] (Up to 200 checked) 13 valid, 13 with tests.
+2026-11-15 14:22:00,323 - swebench.collect.build_dataset - INFO - [BerriAI/litellm] (Up to 300 checked) 25 valid, 25 with tests.
+2026-11-15 14:22:00,323 - swebench.collect.build_dataset - INFO - [BerriAI/litellm] Total instances: 301, completed: 25, with tests: 25
+2026-11-15 14:22:00,323 - swebench.collect.build_dataset - INFO - [BerriAI/litellm] Skipped 0 pull requests that have already been inspected
+2026-11-15 14:23:28,297 - swebench.collect.utils - INFO - [stanfordnlp/dspy] Processed page 1 (100 values per page). Remaining calls: 3390
+2026-11-15 14:24:58,016 - swebench.collect.utils - INFO - [stanfordnlp/dspy] Processed page 2 (100 values per page). Remaining calls: 3189
+2026-11-15 14:26:26,673 - swebench.collect.utils - INFO - [stanfordnlp/dspy] Processed page 3 (100 values per page). Remaining calls: 2989
+2026-11-15 14:26:28,612 - swebench.collect.build_dataset - INFO - Will skip 0 pull requests that have already been inspected
+2026-11-15 14:26:28,613 - swebench.collect.build_dataset - INFO - [stanfordnlp/dspy] (Up to 0 checked) 0 valid, 0 with tests.
+2026-11-15 14:26:28,623 - swebench.collect.build_dataset - INFO - [stanfordnlp/dspy] (Up to 100 checked) 0 valid, 0 with tests.
+2026-11-15 14:26:48,496 - swebench.collect.build_dataset - INFO - [stanfordnlp/dspy] (Up to 200 checked) 9 valid, 8 with tests.
+2026-11-15 14:27:03,309 - swebench.collect.build_dataset - INFO - [stanfordnlp/dspy] (Up to 300 checked) 14 valid, 13 with tests.
+2026-11-15 14:27:03,309 - swebench.collect.build_dataset - INFO - [stanfordnlp/dspy] Total instances: 301, completed: 14, with tests: 13
+2026-11-15 14:27:03,309 - swebench.collect.build_dataset - INFO - [stanfordnlp/dspy] Skipped 0 pull requests that have already been inspected
+2026-11-15 14:28:16,487 - swebench.collect.build_dataset - INFO - Will skip 0 pull requests that have already been inspected
+2026-11-15 14:28:16,488 - swebench.collect.build_dataset - INFO - [pypa/pipenv] (Up to 0 checked) 0 valid, 0 with tests.
+2026-11-15 14:28:58,569 - swebench.collect.utils - INFO - [pypa/pipenv] Resource not found {'owner': 'pypa', 'repo': 'pipenv', 'issue_number': '6684'}
+2026-11-15 14:29:09,409 - swebench.collect.build_dataset - INFO - [pypa/pipenv] Total instances: 85, completed: 21, with tests: 16
+2026-11-15 14:29:09,410 - swebench.collect.build_dataset - INFO - [pypa/pipenv] Skipped 0 pull requests that have already been inspected
+2026-11-15 14:30:45,282 - swebench.collect.utils - INFO - [python-poetry/poetry] Processed page 1 (100 values per page). Remaining calls: 2423
+2026-11-15 14:31:40,814 - swebench.collect.build_dataset - INFO - Will skip 0 pull requests that have already been inspected
+2026-11-15 14:31:40,814 - swebench.collect.build_dataset - INFO - [python-poetry/poetry] (Up to 0 checked) 0 valid, 0 with tests.
+2026-11-15 14:31:55,220 - swebench.collect.build_dataset - INFO - [python-poetry/poetry] (Up to 100 checked) 6 valid, 5 with tests.
+2026-11-15 14:32:16,906 - swebench.collect.build_dataset - INFO - [python-poetry/poetry] Total instances: 157, completed: 15, with tests: 12
+2026-11-15 14:32:16,906 - swebench.collect.build_dataset - INFO - [python-poetry/poetry] Skipped 0 pull requests that have already been inspected
+Pull request data for PrefectHQ/fastmcp not found, creating...
+✅ Successfully saved PR data for PrefectHQ/fastmcp to /Users/ghila/USI/NCA/nca-project/local/mining/prs/fastmcp-prs-20260515.jsonl
+Task instance data for PrefectHQ/fastmcp not found, creating...
+✅ Successfully saved task instance data for PrefectHQ/fastmcp to /Users/ghila/USI/NCA/nca-project/local/mining/tasks/fastmcp-task-instances.jsonl
+Pull request data for agentscope-ai/agentscope not found, creating...
+✅ Successfully saved PR data for agentscope-ai/agentscope to /Users/ghila/USI/NCA/nca-project/local/mining/prs/agentscope-prs-20260515.jsonl
+Task instance data for agentscope-ai/agentscope not found, creating...
+✅ Successfully saved task instance data for agentscope-ai/agentscope to /Users/ghila/USI/NCA/nca-project/local/mining/tasks/agentscope-task-instances.jsonl
+Pull request data for scrapy/scrapy not found, creating...
+✅ Successfully saved PR data for scrapy/scrapy to /Users/ghila/USI/NCA/nca-project/local/mining/prs/scrapy-prs-20260515.jsonl
+Task instance data for scrapy/scrapy not found, creating...
+✅ Successfully saved task instance data for scrapy/scrapy to /Users/ghila/USI/NCA/nca-project/local/mining/tasks/scrapy-task-instances.jsonl
+Pull request data for openai/openai-agents-python not found, creating...
+✅ Successfully saved PR data for openai/openai-agents-python to /Users/ghila/USI/NCA/nca-project/local/mining/prs/openai-agents-python-prs-20260515.jsonl
+Task instance data for openai/openai-agents-python not found, creating...
+✅ Successfully saved task instance data for openai/openai-agents-python to /Users/ghila/USI/NCA/nca-project/local/mining/tasks/openai-agents-python-task-instances.jsonl
+Pull request data for crewAIInc/crewAI not found, creating...
+✅ Successfully saved PR data for crewAIInc/crewAI to /Users/ghila/USI/NCA/nca-project/local/mining/prs/crewAI-prs-20260515.jsonl
+Task instance data for crewAIInc/crewAI not found, creating...
+✅ Successfully saved task instance data for crewAIInc/crewAI to /Users/ghila/USI/NCA/nca-project/local/mining/tasks/crewAI-task-instances.jsonl
+Pull request data for PrefectHQ/prefect not found, creating...
+✅ Successfully saved PR data for PrefectHQ/prefect to /Users/ghila/USI/NCA/nca-project/local/mining/prs/prefect-prs-20260515.jsonl
+Task instance data for PrefectHQ/prefect not found, creating...
+✅ Successfully saved task instance data for PrefectHQ/prefect to /Users/ghila/USI/NCA/nca-project/local/mining/tasks/prefect-task-instances.jsonl
+Pull request data for modelcontextprotocol/python-sdk not found, creating...
+✅ Successfully saved PR data for modelcontextprotocol/python-sdk to /Users/ghila/USI/NCA/nca-project/local/mining/prs/python-sdk-prs-20260515.jsonl
+Task instance data for modelcontextprotocol/python-sdk not found, creating...
+✅ Successfully saved task instance data for modelcontextprotocol/python-sdk to /Users/ghila/USI/NCA/nca-project/local/mining/tasks/python-sdk-task-instances.jsonl
+Pull request data for deepset-ai/haystack not found, creating...
+✅ Successfully saved PR data for deepset-ai/haystack to /Users/ghila/USI/NCA/nca-project/local/mining/prs/haystack-prs-20260515.jsonl
+Task instance data for deepset-ai/haystack not found, creating...
+✅ Successfully saved task instance data for deepset-ai/haystack to /Users/ghila/USI/NCA/nca-project/local/mining/tasks/haystack-task-instances.jsonl
+Pull request data for celery/celery not found, creating...
+✅ Successfully saved PR data for celery/celery to /Users/ghila/USI/NCA/nca-project/local/mining/prs/celery-prs-20260515.jsonl
+Task instance data for celery/celery not found, creating...
+✅ Successfully saved task instance data for celery/celery to /Users/ghila/USI/NCA/nca-project/local/mining/tasks/celery-task-instances.jsonl
+Pull request data for psf/black not found, creating...
+✅ Successfully saved PR data for psf/black to /Users/ghila/USI/NCA/nca-project/local/mining/prs/black-prs-20260515.jsonl
+Task instance data for psf/black not found, creating...
+✅ Successfully saved task instance data for psf/black to /Users/ghila/USI/NCA/nca-project/local/mining/tasks/black-task-instances.jsonl
+Pull request data for roboflow/supervision not found, creating...
+✅ Successfully saved PR data for roboflow/supervision to /Users/ghila/USI/NCA/nca-project/local/mining/prs/supervision-prs-20260515.jsonl
+Task instance data for roboflow/supervision not found, creating...
+✅ Successfully saved task instance data for roboflow/supervision to /Users/ghila/USI/NCA/nca-project/local/mining/tasks/supervision-task-instances.jsonl
+Pull request data for BerriAI/litellm not found, creating...
+✅ Successfully saved PR data for BerriAI/litellm to /Users/ghila/USI/NCA/nca-project/local/mining/prs/litellm-prs-20260515.jsonl
+Task instance data for BerriAI/litellm not found, creating...
+✅ Successfully saved task instance data for BerriAI/litellm to /Users/ghila/USI/NCA/nca-project/local/mining/tasks/litellm-task-instances.jsonl
+Pull request data for stanfordnlp/dspy not found, creating...
+✅ Successfully saved PR data for stanfordnlp/dspy to /Users/ghila/USI/NCA/nca-project/local/mining/prs/dspy-prs-20260515.jsonl
+Task instance data for stanfordnlp/dspy not found, creating...
+✅ Successfully saved task instance data for stanfordnlp/dspy to /Users/ghila/USI/NCA/nca-project/local/mining/tasks/dspy-task-instances.jsonl
+Pull request data for pypa/pipenv not found, creating...
+✅ Successfully saved PR data for pypa/pipenv to /Users/ghila/USI/NCA/nca-project/local/mining/prs/pipenv-prs-20260515.jsonl
+Task instance data for pypa/pipenv not found, creating...
+✅ Successfully saved task instance data for pypa/pipenv to /Users/ghila/USI/NCA/nca-project/local/mining/tasks/pipenv-task-instances.jsonl
+Pull request data for python-poetry/poetry not found, creating...
+✅ Successfully saved PR data for python-poetry/poetry to /Users/ghila/USI/NCA/nca-project/local/mining/prs/poetry-prs-20260515.jsonl
+Task instance data for python-poetry/poetry not found, creating...
+✅ Successfully saved task instance data for python-poetry/poetry to /Users/ghila/USI/NCA/nca-project/local/mining/tasks/poetry-task-instances.jsonl
