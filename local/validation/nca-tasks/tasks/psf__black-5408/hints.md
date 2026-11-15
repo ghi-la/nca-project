@@ -1,0 +1,3 @@
+If the feature is deemed ok, i do have a patch that supports rickstaa's "is_formatted" and adding something like "changed_files=n" would be rather easy. Any guidance  https://github.com/rasjani/black/commit/6571c611d02b4662dbd6466be3c2a7b1191c25a4   ? 
+This won't effect any existing use cases right? If not, I'm definitely all for adding it if it helps you. Seems useful.
+Thanks a lot. Would be quite useful.

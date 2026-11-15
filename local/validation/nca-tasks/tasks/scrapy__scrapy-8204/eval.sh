@@ -1,0 +1,128 @@
+#!/bin/bash
+set -uxo pipefail
+cd /testbed
+git config --global --add safe.directory /testbed
+git status
+git -c core.fileMode=false diff 7af73d44bf6b085057b793ab953ace2cc1823356
+git checkout 7af73d44bf6b085057b793ab953ace2cc1823356 -- tests/test_closespider.py tests/test_command_crawl.py tests/test_engine.py tests/test_stats.py tests/utils/bases/engine.py
+git apply -v - <<'EOF_NCA_TEST_PATCH_7f3a'
+diff --git a/tests/test_closespider.py b/tests/test_closespider.py
+index 99c552b8005..d5c029ff464 100644
+--- a/tests/test_closespider.py
++++ b/tests/test_closespider.py
+@@ -87,6 +87,7 @@ def test_closespider_errorcount(mockserver: MockServer):
+     errorcount = crawler.stats.get_value(key)
+     assert crawler.stats.get_value("spider_exceptions/count") >= close_on
+     assert errorcount >= close_on
++    assert crawler.stats.get_value("finish_reason_error") is True
+ 
+ 
+ @inline_callbacks_test
+diff --git a/tests/test_command_crawl.py b/tests/test_command_crawl.py
+index 6719127c20e..050371bd02f 100644
+--- a/tests/test_command_crawl.py
++++ b/tests/test_command_crawl.py
+@@ -134,6 +134,38 @@ async def start(self):
+         assert "Spider closed (closespider_errorcount)" in err
+         assert returncode != 0
+ 
++    def test_close_spider_error_exit_code(self, proj_path: Path) -> None:
++        spider_code = """
++import scrapy
++from scrapy.exceptions import CloseSpider
++
++class MySpider(scrapy.Spider):
++    name = 'myspider'
++
++    async def start(self):
++        raise CloseSpider('payment_required', error=True)
++        yield
++"""
++        returncode, _, err = self.crawl(spider_code, proj_path)
++        assert "Spider closed (payment_required)" in err
++        assert returncode != 0
++
++    def test_close_spider_custom_reason_exit_code(self, proj_path: Path) -> None:
++        spider_code = """
++import scrapy
++from scrapy.exceptions import CloseSpider
++
++class MySpider(scrapy.Spider):
++    name = 'myspider'
++
++    async def start(self):
++        raise CloseSpider('custom_reason')
++        yield
++"""
++        returncode, _, err = self.crawl(spider_code, proj_path)
++        assert "Spider closed (custom_reason)" in err
++        assert returncode == 0
++
+     def test_start_error_exit_code(self, proj_path: Path) -> None:
+         spider_code = """
+ import scrapy
+diff --git a/tests/test_engine.py b/tests/test_engine.py
+index bd4646ce9c3..fc37b3a3b40 100644
+--- a/tests/test_engine.py
++++ b/tests/test_engine.py
+@@ -76,6 +76,11 @@ def spider_idle(self):
+         raise CloseSpider(reason="custom_reason")
+ 
+ 
++class ErrorCloseReasonSpider(ChangeCloseReasonSpider):
++    def spider_idle(self):
++        raise CloseSpider(reason="custom_reason", error=True)
++
++
+ class TestEngine(TestEngineBase):
+     @coroutine_test
+     async def test_crawler(self, mockserver: MockServer) -> None:
+@@ -117,7 +122,21 @@ async def test_crawler_change_close_reason_on_idle(
+         assert {
+             "spider": run.crawler.spider,
+             "reason": "custom_reason",
++            "error": False,
++        } == run.signals_caught[signals.spider_closed]
++
++    @coroutine_test
++    async def test_crawler_change_close_reason_and_error_on_idle(
++        self, mockserver: MockServer
++    ) -> None:
++        run = CrawlerRun(ErrorCloseReasonSpider)
++        await run.run(mockserver)
++        assert {
++            "spider": run.crawler.spider,
++            "reason": "custom_reason",
++            "error": True,
+         } == run.signals_caught[signals.spider_closed]
++        assert run.crawler.stats.get_value("finish_reason_error") is True
+ 
+     @coroutine_test
+     async def test_close_downloader(self):
+diff --git a/tests/test_stats.py b/tests/test_stats.py
+index 4d7d11a06dd..53b2d09cded 100644
+--- a/tests/test_stats.py
++++ b/tests/test_stats.py
+@@ -56,6 +56,7 @@ def test_core_stats_default_stats_collector(
+             "item_dropped_count": 1,
+             "item_dropped_reasons_count/ZeroDivisionError": 1,
+             "finish_reason": "finished",
++            "finish_reason_error": False,
+             "elapsed_time_seconds": 0.0,
+         }
+ 
+diff --git a/tests/utils/bases/engine.py b/tests/utils/bases/engine.py
+index a41a83a7b6a..cd34d828dc5 100644
+--- a/tests/utils/bases/engine.py
++++ b/tests/utils/bases/engine.py
+@@ -158,4 +158,5 @@ def _assert_signals_caught(run: CrawlerRun) -> None:
+         assert {
+             "spider": run.crawler.spider,
+             "reason": "finished",
++            "error": False,
+         } == run.signals_caught[signals.spider_closed]
+EOF_NCA_TEST_PATCH_7f3a
+: '>>>>> Start Test Output'
+pytest -rA --color=no -p no:cacheprovider tests/test_closespider.py tests/test_command_crawl.py tests/test_engine.py tests/test_stats.py
+: '>>>>> End Test Output'
+git checkout 7af73d44bf6b085057b793ab953ace2cc1823356 -- tests/test_closespider.py tests/test_command_crawl.py tests/test_engine.py tests/test_stats.py tests/utils/bases/engine.py

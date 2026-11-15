@@ -1,0 +1,120 @@
+diff --git a/CHANGES.md b/CHANGES.md
+index 87449b2e1ca..e52875157bc 100644
+--- a/CHANGES.md
++++ b/CHANGES.md
+@@ -220,6 +220,8 @@
+ 
+ - Support PEP 440 version specifiers in `tool.black.required-version` for the GitHub
+   Action (#5399)
++- Add outputs (`is_formatted`, `change_count`, `same_count`, `failure_count`) to GitHub
++  Action runs (#5408)
+ 
+ ### Documentation
+ 
+diff --git a/action.yml b/action.yml
+index 733fcbebac0..dc35ddaaaad 100644
+--- a/action.yml
++++ b/action.yml
+@@ -41,6 +41,19 @@ inputs:
+       keeping GitHub Actions logs clean when using --diff or --check.
+     required: false
+     default: ""
++outputs:
++  is_formatted:
++    description: "Whether any files were reformatted or would be reformatted."
++    value: ${{ steps.black.outputs.is_formatted }}
++  change_count:
++    description: "Number of files that were reformatted or would be reformatted."
++    value: ${{ steps.black.outputs.change_count }}
++  same_count:
++    description: "Number of files that were left unchanged."
++    value: ${{ steps.black.outputs.same_count }}
++  failure_count:
++    description: "Number of files that failed to reformat."
++    value: ${{ steps.black.outputs.failure_count }}
+ branding:
+   color: "black"
+   icon: "check-circle"
+@@ -48,6 +61,7 @@ runs:
+   using: composite
+   steps:
+     - name: black
++      id: black
+       run: |
+         # Even when black fails, do not close the shell
+         set +e
+diff --git a/docs/integrations/github_actions.md b/docs/integrations/github_actions.md
+index 5f540e05741..dff2ec97bbe 100644
+--- a/docs/integrations/github_actions.md
++++ b/docs/integrations/github_actions.md
+@@ -114,3 +114,18 @@ Here's an example configuration:
+     jupyter: true
+     version: "21.5b1"
+ ```
++
++### Outputs
++
++The action provides the following outputs:
++
++- `is_formatted`: Set to `"true"` if any files were reformatted (or in `--check` mode,
++  would be reformatted); `"false"` otherwise. This can be used to run subsequent steps
++  conditionally (for example, auto-committing formatted changes).
++- `change_count`: Number of files that were reformatted (or would be reformatted in
++  `--check` mode).
++- `same_count`: Number of files that were left unchanged.
++- `failure_count`: Number of files that failed to reformat.
++
++These outputs are only accessible if the action version as well as `with.version` are
++both 26.10+.
+diff --git a/src/black/__init__.py b/src/black/__init__.py
+index e719f817f8f..70554567054 100644
+--- a/src/black/__init__.py
++++ b/src/black/__init__.py
+@@ -1,5 +1,6 @@
+ import io
+ import json
++import os
+ import platform
+ import re
+ import sys
+@@ -739,6 +740,8 @@ def main(
+                 out("No Python files are present to be formatted. Nothing to do 😴")
+             if "-" in src:
+                 sys.stdout.write(sys.stdin.read())
++            if "GITHUB_OUTPUT" in os.environ:
++                report.write_github_outputs(Path(os.environ["GITHUB_OUTPUT"]))
+             ctx.exit(0)
+ 
+         if len(sources) == 1:
+@@ -773,6 +776,8 @@ def main(
+         out(error_msg if report.return_code else "All done! ✨ 🍰 ✨")
+         if code is None:
+             click.echo(str(report), err=True)
++    if "GITHUB_OUTPUT" in os.environ:
++        report.write_github_outputs(Path(os.environ["GITHUB_OUTPUT"]))
+     ctx.exit(report.return_code)
+ 
+ 
+diff --git a/src/black/report.py b/src/black/report.py
+index 2736529c8e1..777cb43361c 100644
+--- a/src/black/report.py
++++ b/src/black/report.py
+@@ -120,3 +120,18 @@ def __str__(self) -> str:
+                 style_output(f"{self.failure_count} file{s} {failed}", fg="red")
+             )
+         return ", ".join(report) + "."
++
++    def write_github_outputs(self, output: Path) -> None:
++        is_formatted = "true" if self.change_count > 0 else "false"
++        _outputs = {
++            "is_formatted": is_formatted,
++            "change_count": str(self.change_count),
++            "same_count": str(self.same_count),
++            "failure_count": str(self.failure_count),
++        }
++        try:
++            with output.open("a", encoding="utf-8") as f:
++                for k, v in _outputs.items():
++                    f.write(f"{k}={v}\n")
++        except OSError:
++            pass

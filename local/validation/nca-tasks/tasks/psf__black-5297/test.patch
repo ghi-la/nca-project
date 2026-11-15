@@ -1,0 +1,51 @@
+diff --git a/tests/data/cases/type_ignore_attribute_chain.py b/tests/data/cases/type_ignore_attribute_chain.py
+new file mode 100644
+index 00000000000..c6d636c5fcc
+--- /dev/null
++++ b/tests/data/cases/type_ignore_attribute_chain.py
+@@ -0,0 +1,18 @@
++def _get_light_style(app: sphinx.application.Sphinx) -> Style:
++    return (
++        app  # type: ignore[no-any-return]
++            .builder
++            .highlighter  # type: ignore[attr-defined]
++            .formatter_args["style"]
++        )
++
++
++# output
++
++
++def _get_light_style(app: sphinx.application.Sphinx) -> Style:
++    return (
++        app  # type: ignore[no-any-return]
++        .builder.highlighter  # type: ignore[attr-defined]
++        .formatter_args["style"]
++    )
+diff --git a/tests/data/cases/type_ignore_attribute_chain_unstable.py b/tests/data/cases/type_ignore_attribute_chain_unstable.py
+new file mode 100644
+index 00000000000..12e7eaa1c46
+--- /dev/null
++++ b/tests/data/cases/type_ignore_attribute_chain_unstable.py
+@@ -0,0 +1,21 @@
++# flags: --unstable
++
++
++def _get_light_style(app: sphinx.application.Sphinx) -> Style:
++    return (
++        app  # type: ignore[no-any-return]
++            .builder
++            .highlighter  # type: ignore[attr-defined]
++            .formatter_args["style"]
++        )
++
++
++# output
++
++
++def _get_light_style(app: sphinx.application.Sphinx) -> Style:
++    return (
++        app  # type: ignore[no-any-return]
++        .builder.highlighter  # type: ignore[attr-defined]
++        .formatter_args["style"]
++    )

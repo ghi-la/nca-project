@@ -1,0 +1,301 @@
+diff --git a/docs/apps/architecture.mdx b/docs/apps/architecture.mdx
+index 9e0ff18267..e4dc86f3c3 100644
+--- a/docs/apps/architecture.mdx
++++ b/docs/apps/architecture.mdx
+@@ -31,7 +31,7 @@ When you mark a tool with `app=True` or `@app.ui()`, FastMCP wires up the metada
+ 
+ `app` on `@mcp.tool` accepts `True`, an `AppConfig`, or a dict. When you pass `True`, FastMCP explicitly marks the tool as a Prefab UI tool and stamps placeholder UI metadata so the provider can synthesize the correct renderer resource later. When you omit `app`, FastMCP only applies this automatically if the tool's return type is a Prefab type (`PrefabApp`, `Component`, or unions containing them).
+ 
+-The tool and renderer are linked through a `resourceUri` field in the metadata. Internally, registration uses the placeholder URI `ui://prefab/renderer.html`; when tools and resources are listed or read, FastMCP rewrites that placeholder to a per-tool URI like `ui://prefab/tool/<hash>/renderer.html` and synthesizes the matching renderer resource on demand.
++The tool and renderer are linked through a `resourceUri` field in the metadata. Internally, registration uses the placeholder URI `ui://prefab/renderer.html`; when tools and resources are listed or read, FastMCP rewrites that placeholder to a shared URI like `ui://prefab/renderer/<hash>/renderer.html` and synthesizes the matching renderer resource on demand.
+ 
+ ### FastMCPApp registration
+ 
+@@ -111,7 +111,9 @@ The Prefab renderer is a self-contained JavaScript application that interprets t
+ 
+ ### Renderer resources
+ 
+-FastMCP exposes the renderer through per-tool resources such as `ui://prefab/tool/<hash>/renderer.html`, each with MIME type `text/html;profile=mcp-app`. The HTML is bundled inside the `prefab-ui` Python package; `get_renderer_html()` returns it as a string. The resources are synthesized on demand from each tool's UI metadata, so CSP and permissions can differ per tool even though they use the same Prefab renderer.
++Tools with matching renderer configurations share one resource at `ui://prefab/renderer/<hash>/renderer.html`, with MIME type `text/html;profile=mcp-app`. The identity includes the installed Prefab version, delivery mode, and effective resource metadata. Different CSP, permissions, domains, or border preferences produce separate resources. Explicit resource URI overrides are left unchanged, and previously advertised per-tool URIs remain readable.
++
++Listing tools and resources does not load the renderer HTML. FastMCP generates the page when a host reads the resource. The default delivery mode returns a small HTML page that loads version-pinned assets from a CDN; `PREFAB_BUNDLED_RENDERER=1` serves a self-contained page instead. Shared URIs let hosts recognize equivalent resources, whether or not they choose to cache them.
+ 
+ The resource also carries CSP metadata (via `get_renderer_csp()`) declaring the CDN domains the renderer needs. Hosts use this to configure the iframe's Content Security Policy.
+ 
+diff --git a/fastmcp_slim/fastmcp/server/providers/addressing.py b/fastmcp_slim/fastmcp/server/providers/addressing.py
+index 5b8ef0a27b..9cc879fb9c 100644
+--- a/fastmcp_slim/fastmcp/server/providers/addressing.py
++++ b/fastmcp_slim/fastmcp/server/providers/addressing.py
+@@ -9,9 +9,9 @@
+    matches and applies the same transforms, visibility, and auth as a lookup
+    by the tool's listed name.
+ 
+-2. **Per-tool Prefab renderer URIs.** Each prefab tool gets a unique renderer
+-   resource at ``ui://prefab/tool/<hash>/renderer.html``. ``list_resources``
+-   and ``read_resource`` synthesize these on demand from the tool's meta.
++2. **Legacy Prefab renderer aliases.** Previously advertised per-tool URIs at
++   ``ui://prefab/tool/<hash>/renderer.html`` remain readable. New renderer
++   resources are shared by effective configuration in ``prefab_synthesis``.
+ 
+ The hash is computed at registration time from ``(app_name, tool_name)`` —
+ both known at that moment — and stored in ``meta["fastmcp"]["tool_hash"]``.
+diff --git a/fastmcp_slim/fastmcp/server/providers/local_provider/decorators/tools.py b/fastmcp_slim/fastmcp/server/providers/local_provider/decorators/tools.py
+index 6a36895629..9779801b58 100644
+--- a/fastmcp_slim/fastmcp/server/providers/local_provider/decorators/tools.py
++++ b/fastmcp_slim/fastmcp/server/providers/local_provider/decorators/tools.py
+@@ -67,9 +67,8 @@ def _stamp_prefab_marker(tool: Tool) -> None:
+ 
+     Sets ``meta["ui"]["resourceUri"]`` to a placeholder URI. The server
+     recognizes the placeholder at list_tools / list_resources / read_resource
+-    time and synthesizes a per-tool resource on the fly with a hashed URI
+-    derived from the tool's mount-point address. Nothing is stored — the
+-    renderer HTML and CSP are generated on demand from the tool's own meta.
++    time and synthesizes a shared renderer URI from its effective configuration.
++    Resource metadata comes from the tool; HTML is loaded only when read.
+     """
+     from fastmcp.apps.config import AppConfig, app_config_to_meta_dict
+ 
+diff --git a/fastmcp_slim/fastmcp/server/providers/prefab_synthesis.py b/fastmcp_slim/fastmcp/server/providers/prefab_synthesis.py
+index 30ebd05ebf..66c5d4ae0a 100644
+--- a/fastmcp_slim/fastmcp/server/providers/prefab_synthesis.py
++++ b/fastmcp_slim/fastmcp/server/providers/prefab_synthesis.py
+@@ -1,20 +1,18 @@
+-"""On-demand Prefab renderer resource synthesis.
+-
+-Tools marked as Prefab (via ``app=True``, ``PrefabAppConfig``, etc.) carry
+-a placeholder ``meta.ui.resourceUri`` and optionally a hash in
+-``meta.fastmcp.tool_hash``. This module synthesizes per-tool renderer
+-resources on demand at ``list_resources`` and ``read_resource`` time
+-without storing or materializing anything.
+-
+-Each tool's resource URI is ``ui://prefab/tool/<hash>/renderer.html``
+-where the hash comes from the tool's own meta (set at registration from
+-the app name + tool name). CSP on the resource is the tool's
+-``meta.ui.csp`` merged with the renderer defaults across all four
+-``*_domains`` fields.
++"""On-demand Prefab renderer resources shared by effective configuration.
++
++Tools carry a placeholder UI resource URI. Listings rewrite it to a stable
++renderer URI derived from the Prefab version, delivery mode, and effective
++resource metadata. Matching tools share a resource; different CSP, permissions,
++domains, and border preferences stay distinct. HTML is loaded only on read.
++Legacy per-tool URIs remain readable independently of backend tool identity.
+ """
+ 
+ from __future__ import annotations
+ 
++import hashlib
++import json
++import os
++from functools import partial
+ from typing import TYPE_CHECKING, Any, cast
+ 
+ from fastmcp.server.providers.addressing import (
+@@ -73,8 +71,9 @@ def _merge_domain_lists(
+ 
+ 
+ def _build_resource_for_tool(tool: Tool) -> Resource | None:
+-    """Synthesize a FunctionResource for a prefab tool. Returns None if prefab_ui isn't installed."""
++    """Build a lazy renderer resource, identified by its effective configuration."""
+     try:
++        from prefab_ui import __version__
+         from prefab_ui.renderer import get_renderer_csp, get_renderer_html
+     except ImportError:
+         return None
+@@ -87,12 +86,15 @@ def _build_resource_for_tool(tool: Tool) -> Resource | None:
+     )
+     from fastmcp.resources.function_resource import FunctionResource
+ 
+-    tool_hash = _get_tool_hash(tool)
+-    if tool_hash is None:
+-        return None
++    # Mirror Prefab's documented delivery-mode precedence without loading HTML.
++    mode = os.environ.get("PREFAB_RENDERER_URL", "").rstrip("/")
++    if not mode:
++        bundled = bool(os.environ.get("PREFAB_BUNDLED_RENDERER"))
++        dev_version = "dev" in __version__ or __version__ == "0.0.0"
++        mode = "bundled" if bundled or dev_version else "cdn"
+ 
+     # Merge user CSP with renderer defaults — all four domain fields.
+-    defaults: dict[str, Any] = get_renderer_csp() or {}
++    defaults: dict[str, Any] = get_renderer_csp(mode=mode) or {}
+     user_csp: dict[str, Any] = {}
+     if tool.meta and isinstance(tool.meta.get("ui"), dict):
+         raw = tool.meta["ui"].get("csp")
+@@ -123,6 +125,10 @@ def _get(d: dict[str, Any], snake: str, camel: str) -> list[str] | None:
+             _get(user_csp, "base_uri_domains", "baseUriDomains"),
+         ),
+     }
++    # CSP domain lists are sets of allowed origins; order has no meaning.
++    merged = {
++        key: sorted(set(value)) if value else None for key, value in merged.items()
++    }
+ 
+     resource_csp = ResourceCSP(**merged) if any(merged.values()) else None
+ 
+@@ -152,15 +158,21 @@ def _get(d: dict[str, Any], snake: str, camel: str) -> list[str] | None:
+         domain=domain,
+         prefers_border=prefers_border,
+     )
+-    uri = f"ui://prefab/tool/{tool_hash}/renderer.html"
++    meta = {"ui": app_config_to_meta_dict(resource_app)}
++    identity = json.dumps(
++        {"version": __version__, "mode": mode, "mime_type": UI_MIME_TYPE, "meta": meta},
++        sort_keys=True,
++        separators=(",", ":"),
++    )
++    digest = hashlib.sha256(identity.encode()).hexdigest()
++    uri = f"ui://prefab/renderer/{digest}/renderer.html"
+ 
+-    # The page is built on read: listing would otherwise build one copy per tool.
+     return FunctionResource(
+         uri=cast(Any, uri),
+-        name=f"Prefab Renderer ({tool.name})",
+-        fn=get_renderer_html,
++        name="Prefab Renderer",
++        fn=partial(get_renderer_html, mode=mode),
+         mime_type=UI_MIME_TYPE,
+-        meta={"ui": app_config_to_meta_dict(resource_app)},
++        meta=meta,
+     )
+ 
+ 
+@@ -211,17 +223,42 @@ def _walk_provider(provider: Provider) -> None:
+     return results
+ 
+ 
++async def _effective_prefab_tools(server: FastMCP) -> list[Tool]:
++    """Use provider and session transforms before deriving resource identity."""
++    from fastmcp.server.providers.base import Provider
++    from fastmcp.server.transforms.visibility import (
++        apply_session_transforms,
++        is_enabled,
++    )
++    from fastmcp.utilities.versions import VersionSpec
++
++    tools = await apply_session_transforms(list(await Provider.list_tools(server)))
++    result: list[Tool] = []
++    for tool in tools:
++        if not is_enabled(tool):
++            continue
++        ui = (tool.meta or {}).get("ui")
++        if _is_prefab_tool(tool):
++            result.append(tool)
++        elif isinstance(ui, dict) and str(ui.get("resourceUri", "")).startswith(
++            "ui://prefab/renderer/"
++        ):
++            # Mounted servers have already rewritten their listed metadata.
++            # A normal lookup retains the resource fields needed for synthesis.
++            original = await server.get_tool(tool.name, VersionSpec(eq=tool.version))
++            if original is not None and _is_prefab_tool(original):
++                result.append(original)
++    return result
++
++
+ async def synthesize_prefab_resources(server: FastMCP) -> list[Resource]:
+-    """Return fresh synthetic Prefab resources for all prefab tools. Pure."""
++    """Return one lazy resource per effective renderer configuration."""
+     resources: list[Resource] = []
+-    seen_hashes: set[str] = set()
+-    for tool in _walk_prefab_tools(server):
+-        h = _get_tool_hash(tool)
+-        if h is None or h in seen_hashes:
+-            continue
+-        seen_hashes.add(h)
++    seen: set[str] = set()
++    for tool in await _effective_prefab_tools(server):
+         resource = _build_resource_for_tool(tool)
+-        if resource is not None:
++        if resource is not None and resource.key not in seen:
++            seen.add(resource.key)
+             resources.append(resource)
+     return resources
+ 
+@@ -231,29 +268,33 @@ async def synthesize_prefab_resource_by_uri(
+ ) -> Resource | None:
+     """Intercept a Prefab renderer URI and synthesize on demand."""
+     digest = parse_hashed_resource_uri(uri)
+-    if digest is None:
++    if digest is None and not uri.startswith("ui://prefab/renderer/"):
+         return None
+-    for tool in _walk_prefab_tools(server):
+-        if _get_tool_hash(tool) == digest:
+-            return _build_resource_for_tool(tool)
++    tools = (
++        _walk_prefab_tools(server)
++        if digest is not None
++        else await _effective_prefab_tools(server)
++    )
++    for tool in tools:
++        resource = _build_resource_for_tool(tool)
++        if resource is not None:
++            if digest is not None and _get_tool_hash(tool) == digest:
++                return resource.model_copy(update={"uri": uri})
++            if str(resource.uri) == uri:
++                return resource
+     return None
+ 
+ 
+ def rewrite_tool_meta_for_wire(tool: Tool) -> Tool:
+-    """Return a model_copy with the per-tool URI and resource-only fields stripped.
+-
+-    Reads the hash from the tool's own meta. If no hash is found,
+-    returns the tool unchanged. Produces a fresh copy — the original
+-    Tool object is untouched.
+-    """
++    """Return a copy with the shared URI and resource-only fields stripped."""
+     if not _is_prefab_tool(tool):
+         return tool
+-    tool_hash = _get_tool_hash(tool)
+-    if tool_hash is None:
++    resource = _build_resource_for_tool(tool)
++    if resource is None:
+         return tool
+     assert tool.meta is not None
+     new_ui = dict(tool.meta["ui"])
+-    new_ui["resourceUri"] = f"ui://prefab/tool/{tool_hash}/renderer.html"
++    new_ui["resourceUri"] = str(resource.uri)
+     new_ui.pop("csp", None)
+     new_ui.pop("permissions", None)
+     new_ui.pop("domain", None)
+diff --git a/fastmcp_slim/fastmcp/server/server.py b/fastmcp_slim/fastmcp/server/server.py
+index 13770c8833..b8747ad515 100644
+--- a/fastmcp_slim/fastmcp/server/server.py
++++ b/fastmcp_slim/fastmcp/server/server.py
+@@ -686,13 +686,10 @@ def add_provider(self, provider: Provider, *, namespace: str = "") -> None:
+         super().add_provider(provider, namespace=namespace)
+ 
+     def _rewrite_prefab_uris(self, tools: list[Tool]) -> list[Tool]:
+-        """Replace placeholder Prefab URIs with per-tool hashed ones.
++        """Replace placeholder Prefab URIs with shared renderer identities.
+ 
+-        For each tool whose ``meta.ui.resourceUri`` is the placeholder,
+-        reads the tool's stored hash from ``meta.fastmcp.tool_hash``
+-        and rewrites the URI to the per-tool form. Also strips CSP from
+-        tool meta (it belongs on the resource). Produces ``model_copy``
+-        views — originals are untouched.
++        Matching renderer configurations share a URI. Resource-only fields
++        such as CSP are stripped from copies of tool metadata.
+         """
+         from fastmcp.server.providers.prefab_synthesis import (
+             _is_prefab_tool,
+@@ -999,14 +996,16 @@ async def list_resources(
+                 resources = await apply_session_transforms(resources)
+                 resources = [r for r in resources if is_enabled(r)]
+ 
+-                # Append synthetic Prefab renderer resources — one per
+-                # prefab tool, hashed by mount address. These don't live on
++                # Append synthetic Prefab resources shared by effective
++                # renderer configuration. These don't live on
+                 # any provider's storage; they're computed on demand.
+                 from fastmcp.server.providers.prefab_synthesis import (
+                     synthesize_prefab_resources,
+                 )
+ 
+-                resources.extend(await synthesize_prefab_resources(self))
++                known_keys = {resource.key for resource in resources}
++                synthetic = await synthesize_prefab_resources(self)
++                resources.extend(r for r in synthetic if r.key not in known_keys)
+ 
+                 skip_auth, token = _get_auth_context()
+                 authorized: list[Resource] = []

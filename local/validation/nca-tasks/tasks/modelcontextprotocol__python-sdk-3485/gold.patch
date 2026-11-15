@@ -1,0 +1,1034 @@
+diff --git a/docs/advanced/extensions.md b/docs/advanced/extensions.md
+index b8372da3df..e8793b8cb1 100644
+--- a/docs/advanced/extensions.md
++++ b/docs/advanced/extensions.md
+@@ -190,6 +190,31 @@ that did not declare it (error -32021), and a claimed shape from a server that
+ skips the gate fails validation, exactly as the spec requires for an
+ unrecognized `resultType`. Off by default, on both ends of the wire.
+ 
++An extension can also expose methods of its own. Pass its type to `client.extension()`
++after connecting to get the API bound to that connection. Run the
++[Skills server](skills.md#serving-a-skill) at `http://localhost:8000/mcp` for this example:
++
++```python
++import anyio
++
++from mcp import Client
++from mcp.client.extensions.skills import Skills
++
++
++async def main() -> None:
++    async with Client("http://localhost:8000/mcp", extensions=[Skills()]) as client:
++        for skill in await client.extension(Skills).list_skills():
++            print(skill.uri)
++
++
++if __name__ == "__main__":
++    anyio.run(main)
++```
++
++`client.extension(Skills)` returns the type produced by `Skills.bind(session)`. Your own
++extension can define the same hook. The client raises `ValueError` when the type was not
++registered and `RuntimeError` when it is not connected.
++
+ To advertise an identifier with **no** client-side behaviour (the server gates on
+ the capability, the client does nothing, as in the search client above), use
+ `advertise()`:
+diff --git a/docs/advanced/skills.md b/docs/advanced/skills.md
+new file mode 100644
+index 0000000000..56f95cfa40
+--- /dev/null
++++ b/docs/advanced/skills.md
+@@ -0,0 +1,134 @@
++# Skills
++
++[SEP-2640](https://github.com/modelcontextprotocol/modelcontextprotocol/pull/2640) defines a
++convention for serving [Agent Skills](https://agentskills.io/) over MCP. A skill is just a
++directory of files — at minimum a `SKILL.md` with YAML frontmatter — that you expose as ordinary
++MCP resources, conventionally under a `skill://` URI.
++
++A server enumerates its skills with `skills/list`, answers for any single one by URI with
++`skills/get`, and — optionally — lists a directory's direct children with
++`resources/directory/read`.
++
++The SDK ships this as the built-in `Skills` extension (`io.modelcontextprotocol/skills`). There's
++one on the server side and one on the client side. If [Extensions](extensions.md) are new to you,
++skim that page first.
++
++!!! info
++    `Skills` gives you the **protocol** primitives: request/response handling, capability
++    advertisement, and SEP-2640 conformance validation.
++
++    It does **not** discover, read, or hash skills from a filesystem. You supply handlers that
++    answer from wherever your catalog actually lives — a database, a generated index, an in-memory
++    list, or a directory you walk yourself — and you serve each skill's files as ordinary resources
++    through `MCPServer.add_resource` or an `@mcp.resource(...)` template handler.
++
++## Serving a skill
++
++Here's a server that serves one skill:
++
++```python title="server.py" hl_lines="31-41 44-51 55"
++--8<-- "docs_src/skills/tutorial001.py"
++```
++
++There are three moves here:
++
++* `Skill(uri=..., frontmatter=..., resources=[...])` is one entry. It has the same shape whether it
++  comes back from `skills/list` or `skills/get`. `resources` is the skill's complete file
++  manifest — every file, `SKILL.md` included, each with a `sha256:...` digest and byte size — or
++  the string `"dynamic"` for content generated on demand.
++* `list_skills` and `get_skill` are plain async callables, invoked once per request. `get_skill`
++  **must** answer for a skill even if your `list_skills` left it out — SEP-2640 requires a server
++  to answer by URI for every skill it serves, listed or not.
++* `mcp.add_resource(TextResource(uri=SKILL_URI, ...))` registers the skill's actual file content,
++  served through the SDK's ordinary resource machinery. `Skills` never reads or writes resource
++  content itself.
++
++And that's it. `Skills(list_skills=..., get_skill=...)` is all a server needs;
++`resources/directory/read` is optional (more on that below).
++
++## Inspecting a skill
++
++On the client side, `Skills` is a [`ClientExtension`](extensions.md). You register it the same way
++you register any other one — by passing it to `Client(extensions=[...])` — and then call `extension` to
++get the verbs tied to that connection:
++
++```python title="client.py" hl_lines="9-11"
++--8<-- "docs_src/skills/tutorial001_client.py"
++```
++
++`client.extension(Skills)` hands you a `SkillsClient` with the SEP-2640 methods:
++
++* `list_skills` and `read_directory` follow `nextCursor` to completion, so a single call gives you
++  every page's skills or resources.
++* `get_skill` costs exactly one request.
++
++These three validate the server's response against the SEP-2640 conformance rules before returning
++it. A name that doesn't match its URI, a digest in the wrong shape, or an incomplete manifest raises
++`ValueError` rather than reaching your code.
++
++Read a skill file with `Client.read_resource(uri)`, the same method you use for any MCP resource.
++It returns raw content without checking it against the skill's manifest.
++
++!!! warning "Verify files before loading"
++    A host that loads a skill must hold its `Skill` entry. Before using a fetched file, check that
++    its URI appears in that entry's `resources` and that its bytes match the advertised size and
++    SHA-256 digest. A `"dynamic"` skill has no digest to check. Refreshing the entry to accept
++    changed bytes also changes the content to which any prior approval applied.
++
++    Skill content is untrusted model input, exactly like any other server-provided text. SEP-2640
++    requires a host to tag it with its originating server before it reaches the model, and to
++    never grant the frontmatter's `allowed-tools` field (or any other permission-widening field)
++    without explicit per-skill user approval.
++
++    A matching digest confirms the *bytes*, not the *frontmatter*: it doesn't prove the
++    `frontmatter` the server advertised in `skills/get` matches the frontmatter inside the fetched
++    `SKILL.md`. If you act on `skill.frontmatter` — especially `allowed-tools` — parse the fetched
++    file and compare its frontmatter yourself.
++
++    These are host responsibilities the SDK cannot discharge for you — read the SEP's
++    [Security Implications](https://github.com/modelcontextprotocol/modelcontextprotocol/pull/2640)
++    section before building a host on top of this extension.
++
++## Directory reads
++
++A skill's instructions often point at a directory rather than a file ("pick the matching
++template from `templates/`"). `resources/list` can't answer that — it enumerates a server's
++entire resource space, not one subtree — so SEP-2640 adds `resources/directory/read`, gated
++behind the `directoryRead` capability setting:
++
++```python
++mcp = MCPServer(
++    "catalog",
++    extensions=[
++        Skills(
++            list_skills=list_skills,
++            get_skill=get_skill,
++            read_directory=read_directory,  # lists uri's direct children
++        )
++    ],
++)
++```
++
++Supplying `read_directory` advertises `{"directoryRead": true}` under the extension's
++capabilities. Omitting it advertises neither the setting nor the method — a client calling
++`resources/directory/read` against such a server gets `METHOD_NOT_FOUND`. On the client side,
++`read_directory` raises before it sends anything if the connected server hasn't advertised the
++setting.
++
++## Protocol version and caching
++
++In protocol version `2026-07-28` and later, `skills/list` and `skills/get` results carry the base
++protocol's caching fields, [`ttlMs` and `cacheScope`](https://github.com/modelcontextprotocol/modelcontextprotocol/pull/2549) —
++the same freshness hint `tools/list`, `resources/list`, and `resources/read` carry. `Skills` fills
++`cacheScope` with `"private"` when your handler leaves it unset, and omits both fields entirely on an
++older connection. Set `cache_scope="public"` only when the result is the same for every user.
++You don't have to branch on protocol version yourself.
++
++## What this SDK doesn't do
++
++`Skills` is a protocol adapter, not a skills provider. It has no opinion on where a skill's bytes
++live, how they're indexed, or when a catalog is refreshed — that's for a higher-level library, or
++your own handler, to decide.
++
++If you're looking for "scan this directory and serve whatever's in it," you're looking for a
++provider built on top of `Skills`, not `Skills` itself.
+diff --git a/docs_src/skills/__init__.py b/docs_src/skills/__init__.py
+new file mode 100644
+index 0000000000..e69de29bb2
+diff --git a/docs_src/skills/tutorial001.py b/docs_src/skills/tutorial001.py
+new file mode 100644
+index 0000000000..61cc43c2e8
+--- /dev/null
++++ b/docs_src/skills/tutorial001.py
+@@ -0,0 +1,54 @@
++import hashlib
++from typing import Any
++
++from mcp.server.context import ServerRequestContext
++from mcp.server.mcpserver import MCPServer
++from mcp.server.mcpserver.resources import TextResource
++from mcp.server.skills import Skills
++from mcp.shared.exceptions import MCPError
++from mcp.shared.skills import (
++    GetSkillParams,
++    GetSkillResult,
++    ListSkillsParams,
++    ListSkillsResult,
++    Skill,
++    SkillResource,
++)
++from mcp.types import INVALID_PARAMS
++
++SKILL_URI = "skill://git-workflow/SKILL.md"
++SKILL_MD = """\
++---
++name: git-workflow
++description: Follow this team's Git conventions for branching and commits
++---
++
++Branch from `main` using `type/short-description`. Write commit subjects in the
++imperative mood, under 72 characters.
++"""
++
++GIT_WORKFLOW = Skill(
++    uri=SKILL_URI,
++    frontmatter={"name": "git-workflow", "description": "Follow this team's Git conventions for branching and commits"},
++    resources=[
++        SkillResource(
++            uri=SKILL_URI,
++            digest=f"sha256:{hashlib.sha256(SKILL_MD.encode()).hexdigest()}",
++            size=len(SKILL_MD.encode()),
++        )
++    ],
++)
++
++
++async def list_skills(ctx: ServerRequestContext[Any, Any], params: ListSkillsParams) -> ListSkillsResult:
++    return ListSkillsResult(skills=[GIT_WORKFLOW])
++
++
++async def get_skill(ctx: ServerRequestContext[Any, Any], params: GetSkillParams) -> GetSkillResult:
++    if params.uri != SKILL_URI:
++        raise MCPError(code=INVALID_PARAMS, message=f"unknown skill: {params.uri}")
++    return GetSkillResult(skill=GIT_WORKFLOW)
++
++
++mcp = MCPServer("catalog", extensions=[Skills(list_skills=list_skills, get_skill=get_skill)])
++mcp.add_resource(TextResource(uri=SKILL_URI, name="SKILL.md", mime_type="text/markdown", text=SKILL_MD))
+diff --git a/docs_src/skills/tutorial001_client.py b/docs_src/skills/tutorial001_client.py
+new file mode 100644
+index 0000000000..27f51fd2f1
+--- /dev/null
++++ b/docs_src/skills/tutorial001_client.py
+@@ -0,0 +1,18 @@
++import anyio
++
++from mcp import Client
++from mcp.client.extensions.skills import Skills
++
++
++async def main() -> None:
++    async with Client("http://localhost:8000/mcp", extensions=[Skills()]) as client:
++        catalog = client.extension(Skills)
++        for skill in await catalog.list_skills():
++            print(skill.uri, skill.frontmatter["description"])
++
++        skill = await catalog.get_skill("skill://git-workflow/SKILL.md")
++        print(skill.resources)
++
++
++if __name__ == "__main__":
++    anyio.run(main)
+diff --git a/mkdocs.yml b/mkdocs.yml
+index 1874a04050..62f0640366 100644
+--- a/mkdocs.yml
++++ b/mkdocs.yml
+@@ -69,6 +69,7 @@ nav:
+       - Header parameters: advanced/header-parameters.md
+       - Extensions: advanced/extensions.md
+       - MCP Apps: advanced/apps.md
++      - Skills: advanced/skills.md
+   - Troubleshooting: troubleshooting.md
+   - Translations: translations.md
+   - Migration Guide: migration.md
+diff --git a/src/mcp/client/client.py b/src/mcp/client/client.py
+index 8c7d372431..099dcbb874 100644
+--- a/src/mcp/client/client.py
++++ b/src/mcp/client/client.py
+@@ -49,7 +49,7 @@
+ from mcp.client._probe import negotiate_auto
+ from mcp.client._transport import Transport
+ from mcp.client.caching import CacheConfig, CacheMode, ClientResponseCache, InMemoryResponseCacheStore
+-from mcp.client.extension import ClaimContext, ClientExtension, NotificationBinding, ResultClaim
++from mcp.client.extension import ClaimContext, ClientExtension, ClientExtensionBinding, NotificationBinding, ResultClaim
+ from mcp.client.session import (
+     ClientRequestContext,
+     ClientSession,
+@@ -87,6 +87,7 @@
+ _T = TypeVar("_T")
+ _ResultT = TypeVar("_ResultT")
+ _CacheableT = TypeVar("_CacheableT", bound=CacheableResult)
++_BoundT = TypeVar("_BoundT")
+ 
+ _Connector = Callable[[AsyncExitStack, ConnectMode, bool], Awaitable["Dispatcher[Any]"]]
+ """Resolved at ``__post_init__`` from the shape of ``server`` alone: enter whatever resources
+@@ -376,6 +377,7 @@ async def main():
+     _connect: _Connector = field(init=False, repr=False, compare=False)
+     _response_cache: ClientResponseCache | None = field(init=False, default=None, repr=False, compare=False)
+     _folded_extensions: _FoldedExtensions = field(init=False, repr=False, compare=False)
++    _registered_extensions: tuple[ClientExtension, ...] = field(init=False, repr=False, compare=False)
+ 
+     def __post_init__(self) -> None:
+         if self.mode not in ("legacy", "auto") and self.mode not in MODERN_PROTOCOL_VERSIONS:
+@@ -389,6 +391,7 @@ def __post_init__(self) -> None:
+             )
+ 
+         self._folded_extensions = _fold_extensions(self.extensions)
++        self._registered_extensions = tuple(self.extensions or ())
+ 
+         srv = self.server
+         if isinstance(srv, MCPServer):
+@@ -493,6 +496,19 @@ def session(self) -> ClientSession:
+             raise RuntimeError("Client must be used within an async context manager")
+         return self._session
+ 
++    def extension(self, extension_type: type[ClientExtensionBinding[_BoundT]]) -> _BoundT:
++        """Return the typed API of a registered extension for this connection.
++
++        Raises:
++            RuntimeError: If the client is not connected.
++            ValueError: If no extension of this type was registered.
++        """
++        session = self.session
++        for extension in self._registered_extensions:
++            if isinstance(extension, extension_type):
++                return cast(ClientExtensionBinding[_BoundT], extension).bind(session)
++        raise ValueError(f"client extension {extension_type.__name__!r} is not registered")
++
+     # TODO(maxisbey): the by-construction shape is for __aenter__ to return a connected-view
+     # type whose protocol_version/server_capabilities are non-Optional fields,
+     # eliminating these guards (and the one in .session). Same family as resolving the
+diff --git a/src/mcp/client/extension.py b/src/mcp/client/extension.py
+index a813475e5e..59d08b1bfc 100644
+--- a/src/mcp/client/extension.py
++++ b/src/mcp/client/extension.py
+@@ -15,6 +15,7 @@
+ from mcp_types.version import MODERN_PROTOCOL_VERSIONS
+ from pydantic import AliasChoices, AliasPath, BaseModel
+ from pydantic.fields import FieldInfo
++from typing_extensions import Protocol
+ 
+ from mcp.shared.extension import validate_extension_identifier
+ 
+@@ -24,6 +25,7 @@
+ __all__ = [
+     "ClaimContext",
+     "ClientExtension",
++    "ClientExtensionBinding",
+     "NotificationBinding",
+     "ResultClaim",
+     "UnexpectedClaimedResult",
+@@ -54,6 +56,15 @@ def _wire_keys(name: str, field: FieldInfo) -> frozenset[str]:
+ 
+ ClaimedT = TypeVar("ClaimedT", bound=Result)
+ NotifyParamsT = TypeVar("NotifyParamsT", bound=BaseModel)
++BoundT_co = TypeVar("BoundT_co", covariant=True)
++
++
++class ClientExtensionBinding(Protocol[BoundT_co]):
++    """An extension that exposes a typed API for one connected client."""
++
++    def bind(self, session: ClientSession) -> BoundT_co:
++        """Return the extension API bound to `session`."""
++        ...
+ 
+ 
+ @dataclass(frozen=True, kw_only=True)
+diff --git a/src/mcp/client/extensions/__init__.py b/src/mcp/client/extensions/__init__.py
+new file mode 100644
+index 0000000000..ef91475f99
+--- /dev/null
++++ b/src/mcp/client/extensions/__init__.py
+@@ -0,0 +1,3 @@
++from mcp.client.extensions.skills import Skills, SkillsClient
++
++__all__ = ["Skills", "SkillsClient"]
+diff --git a/src/mcp/client/extensions/skills.py b/src/mcp/client/extensions/skills.py
+new file mode 100644
+index 0000000000..11c78db816
+--- /dev/null
++++ b/src/mcp/client/extensions/skills.py
+@@ -0,0 +1,170 @@
++"""Client-side Skills extension (SEP-2640).
++
++`Skills` is an opt-in [`ClientExtension`](../advanced/extensions.md) for talking
++to a skills catalog server. Register it with `Client(extensions=[Skills()])`,
++then call `client.extension(Skills)` for the SEP-2640 verbs — `list_skills`, `get_skill`,
++and `read_directory` — tied to that connection:
++
++    async with Client("http://localhost:8000/mcp", extensions=[Skills()]) as client:
++        for skill in await client.extension(Skills).list_skills():
++            print(skill.uri, skill.frontmatter["description"])
++
++`client.extension(Skills)` returns a `SkillsClient`. Its catalog verbs — `list_skills`,
++`get_skill`, and `read_directory` — check that the server advertises the
++extension and validate its response; `list_skills` and `read_directory` follow
++`nextCursor` to completion, so one call returns every page's results.
++"""
++
++from __future__ import annotations
++
++from mcp_types import Resource
++
++from mcp.client.extension import ClientExtension
++from mcp.client.session import ClientSession
++from mcp.shared.skills import (
++    EXTENSION_ID,
++    GetSkillParams,
++    GetSkillRequest,
++    GetSkillResult,
++    ListSkillsParams,
++    ListSkillsRequest,
++    ListSkillsResult,
++    ReadDirectoryParams,
++    ReadDirectoryRequest,
++    ReadDirectoryResult,
++    Skill,
++    validate_directory_result,
++)
++
++__all__ = ["Skills", "SkillsClient"]
++
++
++class Skills(ClientExtension):
++    """The client-side Skills extension: register, then access its typed verbs.
++
++    Pass an instance to `Client(extensions=[Skills()])` — this advertises
++    `io.modelcontextprotocol/skills` under the client's capabilities — and call
++    `client.extension(Skills)` once connected for a `SkillsClient` handle.
++    """
++
++    identifier = EXTENSION_ID
++
++    def bind(self, session: ClientSession) -> SkillsClient:
++        """Return the SEP-2640 verbs bound to `session`."""
++        return SkillsClient(session)
++
++
++class SkillsClient:
++    """The SEP-2640 verbs bound to one connected session.
++
++    Obtain it from `client.extension(Skills)`. The catalog verbs — `list_skills`,
++    `get_skill`, and `read_directory` — check that the server advertises the
++    extension and validate its response against the SEP-2640 conformance rules
++    before returning; `list_skills` and `read_directory` also follow
++    `nextCursor` to completion. Read a skill's files with the ordinary
++    `Client.read_resource` method.
++    """
++
++    def __init__(self, session: ClientSession) -> None:
++        self._session = session
++
++    def _require_extension(self, *, directory_read: bool = False) -> None:
++        capabilities = self._session.server_capabilities
++        settings = (capabilities.extensions or {}).get(EXTENSION_ID) if capabilities else None
++        if settings is None:
++            raise ValueError(f"server does not advertise the {EXTENSION_ID!r} extension")
++        if directory_read and not settings.get("directoryRead"):
++            raise ValueError(f"server does not advertise {EXTENSION_ID!r}'s directoryRead setting")
++
++    async def list_skills(self, params: ListSkillsParams | None = None) -> list[Skill]:
++        """Call `skills/list`, following `nextCursor` to completion, and validate the result.
++
++        A skill a changing catalog surfaces on more than one page is returned once, in the order
++        first seen.
++
++        Raises:
++            ValueError: If the server doesn't advertise the Skills extension, its response is not
++                SEP-2640 conformant, or it repeats a pagination cursor.
++            MCPError: If the server returns an error response.
++        """
++        self._require_extension()
++        base = params if params is not None else ListSkillsParams()
++        cursor = base.cursor
++        skills: list[Skill] = []
++        seen_cursors: set[str] = {cursor} if cursor is not None else set()
++        seen_uris: set[str] = set()
++        while True:
++            # `send_request` parses each page into `ListSkillsResult`, whose validators reject a
++            # non-conformant skill or a duplicate URI — no separate conformance call is needed.
++            page = await self._session.send_request(
++                ListSkillsRequest(params=base.model_copy(update={"cursor": cursor})), ListSkillsResult
++            )
++            # A server stuck repeating its cursor is a loop; catch that before the content checks.
++            if page.next_cursor is not None and page.next_cursor in seen_cursors:
++                raise ValueError(f"server repeated skills/list pagination cursor {page.next_cursor!r}")
++            # A catalog that changes between page fetches can legitimately repeat a skill across
++            # pages; keep the first occurrence rather than treating it as an error.
++            for skill in page.skills:
++                if skill.uri not in seen_uris:
++                    seen_uris.add(skill.uri)
++                    skills.append(skill)
++            if page.next_cursor is None:
++                return skills
++            seen_cursors.add(page.next_cursor)
++            cursor = page.next_cursor
++
++    async def get_skill(self, uri: str) -> Skill:
++        """Call `skills/get` for `uri` and validate the result.
++
++        Unlike `list_skills`, this succeeds for a skill absent from any listing —
++        per SEP-2640, a server MUST answer `skills/get` for every skill it serves.
++
++        Raises:
++            ValueError: If the server doesn't advertise the Skills extension, its
++                response names a different skill, or the skill is not conformant.
++            MCPError: If the server returns an error response, such as `-32602`
++                for a URI it does not serve.
++        """
++        self._require_extension()
++        # Parsing `GetSkillResult` validates the skill's own conformance; the requested-URI match
++        # is the one rule the skill body can't carry, so it stays an explicit check here.
++        result = await self._session.send_request(GetSkillRequest(params=GetSkillParams(uri=uri)), GetSkillResult)
++        if result.skill.uri != uri:
++            raise ValueError(f"server returned skill {result.skill.uri!r} for requested {uri!r}")
++        return result.skill
++
++    async def read_directory(self, uri: str, params: ReadDirectoryParams | None = None) -> list[Resource]:
++        """Call `resources/directory/read` for `uri`, following `nextCursor` to completion.
++
++        A child a changing directory surfaces on more than one page is returned once, in the order
++        first seen.
++
++        Raises:
++            ValueError: If the server doesn't advertise the `directoryRead` setting, its response
++                is not a valid child listing of `uri`, or it repeats a pagination cursor.
++            MCPError: If the server returns an error response.
++        """
++        self._require_extension(directory_read=True)
++        base = params if params is not None else ReadDirectoryParams(uri=uri)
++        cursor = base.cursor
++        resources: list[Resource] = []
++        seen_cursors: set[str] = {cursor} if cursor is not None else set()
++        seen_uris: set[str] = set()
++        while True:
++            page = await self._session.send_request(
++                ReadDirectoryRequest(params=base.model_copy(update={"uri": uri, "cursor": cursor})),
++                ReadDirectoryResult,
++            )
++            # A server stuck repeating its cursor is a loop; catch that before the content checks.
++            if page.next_cursor is not None and page.next_cursor in seen_cursors:
++                raise ValueError(f"server repeated resources/directory/read pagination cursor {page.next_cursor!r}")
++            validate_directory_result(uri, page)
++            # A changing directory can legitimately repeat a child across pages; keep the first.
++            for resource in page.resources:
++                if resource.uri not in seen_uris:
++                    seen_uris.add(resource.uri)
++                    resources.append(resource)
++            if page.next_cursor is None:
++                return resources
++            seen_cursors.add(page.next_cursor)
++            cursor = page.next_cursor
+diff --git a/src/mcp/server/skills.py b/src/mcp/server/skills.py
+new file mode 100644
+index 0000000000..0c0fac05c4
+--- /dev/null
++++ b/src/mcp/server/skills.py
+@@ -0,0 +1,172 @@
++"""The Skills extension (`io.modelcontextprotocol/skills`, SEP-2640).
++
++SEP-2640 defines a convention for serving Agent Skills over MCP using the
++Resources primitive: a skill is a directory of files, conventionally exposed
++under the `skill://` scheme, and enumerated and fetched through two required
++methods (`skills/list`, `skills/get`) plus one optional one
++(`resources/directory/read`). See
++https://github.com/modelcontextprotocol/modelcontextprotocol/pull/2640.
++
++This module provides the protocol-level plumbing only: request/response
++handling, SEP-2640 conformance validation, and capability advertisement. It
++does not discover, read, or hash skills from a filesystem — a server author
++supplies handlers that answer `skills/list`/`skills/get`/`resources/directory/read`
++however their catalog is stored, and serves the underlying `skill://` file
++content through the server's ordinary resource-registration APIs
++(`MCPServer.add_resource`, or an `@mcp.resource(...)` template).
++
++    async def list_skills(ctx, params):
++        return ListSkillsResult(skills=[...])
++
++    async def get_skill(ctx, params):
++        if params.uri != "skill://git-workflow/SKILL.md":
++            raise MCPError(code=INVALID_PARAMS, message="unknown skill")
++        return GetSkillResult(skill=...)
++
++    mcp = MCPServer("catalog", extensions=[Skills(list_skills=list_skills, get_skill=get_skill)])
++"""
++
++from __future__ import annotations
++
++from collections.abc import Awaitable, Callable, Sequence
++from typing import Any
++
++from mcp_types import CacheableResult
++from mcp_types.jsonrpc import INTERNAL_ERROR, INVALID_PARAMS
++from mcp_types.version import MODERN_PROTOCOL_VERSIONS
++from pydantic import ValidationError
++
++from mcp.server.context import HandlerResult, ServerRequestContext
++from mcp.server.extension import Extension, MethodBinding
++from mcp.shared.exceptions import MCPError
++from mcp.shared.skills import (
++    EXTENSION_ID,
++    METHOD_GET,
++    METHOD_LIST,
++    METHOD_READ_DIRECTORY,
++    GetSkillParams,
++    GetSkillResult,
++    ListSkillsParams,
++    ListSkillsResult,
++    ReadDirectoryParams,
++    ReadDirectoryResult,
++    parse_directory_uri,
++    skill_name_from_uri,
++    validate_directory_result,
++)
++
++__all__ = ["Skills"]
++
++ListSkillsHandler = Callable[[ServerRequestContext[Any, Any], ListSkillsParams], Awaitable[ListSkillsResult]]
++GetSkillHandler = Callable[[ServerRequestContext[Any, Any], GetSkillParams], Awaitable[GetSkillResult]]
++ReadDirectoryHandler = Callable[[ServerRequestContext[Any, Any], ReadDirectoryParams], Awaitable[ReadDirectoryResult]]
++
++
++class Skills(Extension):
++    """The Skills extension: serve `skills/list`, `skills/get`, and directory reads.
++
++    `list_skills` and `get_skill` are required; a server MUST answer both per
++    SEP-2640, whether or not a skill appears in the listing. `read_directory`
++    is optional — supplying it advertises the `directoryRead` capability
++    setting and serves `resources/directory/read`; omitting it advertises
++    neither. Handlers run per request, so a catalog that changes over time
++    (or is too large to enumerate) can return a partial or empty listing.
++
++    Handler error contract: raise `MCPError` to return a specific error to the
++    caller (e.g. `INVALID_PARAMS` from `get_skill` for a URI it doesn't serve).
++    A result that isn't SEP-2640 conformant is caught here and reported as
++    `INTERNAL_ERROR` — a server fault, not the caller's bad params.
++    """
++
++    identifier = EXTENSION_ID
++
++    def __init__(
++        self,
++        *,
++        list_skills: ListSkillsHandler,
++        get_skill: GetSkillHandler,
++        read_directory: ReadDirectoryHandler | None = None,
++    ) -> None:
++        self._list_skills = list_skills
++        self._get_skill = get_skill
++        self._read_directory = read_directory
++
++    def settings(self) -> dict[str, Any]:
++        return {"directoryRead": True} if self._read_directory is not None else {}
++
++    def methods(self) -> Sequence[MethodBinding]:
++        bindings = [
++            MethodBinding(METHOD_LIST, ListSkillsParams, self._handle_list),
++            MethodBinding(METHOD_GET, GetSkillParams, self._handle_get),
++        ]
++        if self._read_directory is not None:
++            bindings.append(MethodBinding(METHOD_READ_DIRECTORY, ReadDirectoryParams, self._handle_read_directory))
++        return bindings
++
++    async def _handle_list(self, ctx: ServerRequestContext[Any, Any], params: ListSkillsParams) -> HandlerResult:
++        # `ListSkillsResult`/`Skill` self-validate on construction, so a handler that builds a
++        # non-conformant listing raises `ValidationError` here — a server fault, surfaced as an
++        # Internal error rather than the framework's default Invalid params for a bad body. The
++        # models stay mutable, so re-validate the outbound payload too: a handler that mutates a
++        # skill after building the result can't ship a non-conformant listing past this point.
++        try:
++            result = await self._list_skills(ctx, params)
++            ListSkillsResult.model_validate(result.model_dump())
++        except ValidationError:
++            raise MCPError(code=INTERNAL_ERROR, message="Handler returned an invalid result") from None
++        return _finalize_cacheable(result, ctx.protocol_version)
++
++    async def _handle_get(self, ctx: ServerRequestContext[Any, Any], params: GetSkillParams) -> HandlerResult:
++        _require_skill_md_uri(params.uri)
++        # `Skill` self-validates on construction, and the re-validation guards post-construction
++        # mutation, both as in `_handle_list`.
++        try:
++            result = await self._get_skill(ctx, params)
++            GetSkillResult.model_validate(result.model_dump())
++        except ValidationError:
++            raise MCPError(code=INTERNAL_ERROR, message="Handler returned an invalid result") from None
++        if result.skill.uri != params.uri:
++            raise MCPError(code=INTERNAL_ERROR, message="Handler returned an invalid result")
++        return _finalize_cacheable(result, ctx.protocol_version)
++
++    async def _handle_read_directory(
++        self, ctx: ServerRequestContext[Any, Any], params: ReadDirectoryParams
++    ) -> HandlerResult:
++        assert self._read_directory is not None
++        _require_directory_uri(params.uri)
++        result = await self._read_directory(ctx, params)
++        try:
++            validate_directory_result(params.uri, result)
++        except ValueError:
++            raise MCPError(code=INTERNAL_ERROR, message="Handler returned an invalid result") from None
++        return result
++
++
++def _require_skill_md_uri(uri: str) -> None:
++    try:
++        skill_name_from_uri(uri)
++    except ValueError as exc:
++        raise MCPError(code=INVALID_PARAMS, message=str(exc)) from exc
++
++
++def _require_directory_uri(uri: str) -> None:
++    try:
++        parse_directory_uri(uri)
++    except ValueError as exc:
++        raise MCPError(code=INVALID_PARAMS, message=str(exc)) from exc
++
++
++def _finalize_cacheable(result: CacheableResult, protocol_version: str) -> HandlerResult:
++    """Gate SEP-2549's `ttlMs`/`cacheScope` to protocol version 2026-07-28+.
++
++    `skills/list` and `skills/get` are extension methods, so — unlike a core spec
++    method — the runner's per-version surface sieve never runs on their results;
++    nothing else strips these fields for a legacy connection. `CacheableResult`
++    defaults to `cache_scope="private"`, keeping user-specific entries out of shared caches.
++    """
++    if protocol_version in MODERN_PROTOCOL_VERSIONS:
++        return result
++    dumped = result.model_dump(by_alias=True, mode="json", exclude_none=True)
++    dumped.pop("ttlMs", None)
++    dumped.pop("cacheScope", None)
++    return dumped
+diff --git a/src/mcp/shared/skills.py b/src/mcp/shared/skills.py
+new file mode 100644
+index 0000000000..eb6dbe51ca
+--- /dev/null
++++ b/src/mcp/shared/skills.py
+@@ -0,0 +1,297 @@
++"""Wire types and SEP-2640 conformance checks for the Skills extension.
++
++Shared by the server (`mcp.server.skills`) and client (`mcp.client.extensions.skills`)
++surfaces, mirroring how `mcp.shared.extension` hosts the identifier grammar
++both tiers need. See https://github.com/modelcontextprotocol/modelcontextprotocol/pull/2640.
++"""
++
++from __future__ import annotations
++
++import re
++from typing import Annotated, Any, Literal
++from urllib.parse import urlsplit
++
++from mcp_types import CacheableResult, PaginatedRequestParams, PaginatedResult, Request, RequestParams, Resource
++from pydantic import AfterValidator, BaseModel, ConfigDict, Field, model_validator
++from pydantic.alias_generators import to_camel
++
++__all__ = [
++    "Frontmatter",
++    "SkillResource",
++    "SkillResources",
++    "Skill",
++    "ListSkillsParams",
++    "ListSkillsResult",
++    "GetSkillParams",
++    "GetSkillResult",
++    "ReadDirectoryParams",
++    "ReadDirectoryResult",
++]
++
++EXTENSION_ID = "io.modelcontextprotocol/skills"
++"""The Skills extension identifier, advertised under `ServerCapabilities.extensions`."""
++
++METHOD_LIST = "skills/list"
++METHOD_GET = "skills/get"
++METHOD_READ_DIRECTORY = "resources/directory/read"
++
++MAX_RESOURCES_PER_SKILL = 512
++"""SEP-2640 per-skill resource-count threshold (`SKILL.md` included).
++
++A SHOULD NOT limit, not a hard cap: the spec requires a host to support skills
++*up to and including* 512 entries and permits it to support larger ones, so a
++`Skill` does not reject an over-count manifest."""
++
++MAX_TOTAL_SIZE = 16 * 1024 * 1024
++"""SEP-2640 per-skill total-byte-size threshold (16 MiB), summed over `resources[].size`.
++
++A SHOULD NOT limit, not a hard cap (see `MAX_RESOURCES_PER_SKILL`); an over-size
++manifest is not rejected."""
++
++_NAME_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
++_DIGEST_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
++
++
++def _check_digest(value: str) -> str:
++    if not _DIGEST_RE.fullmatch(value):
++        raise ValueError(f"invalid SHA-256 digest {value!r}; expected 'sha256:' + 64 lowercase hex characters")
++    return value
++
++
++class _SkillModel(BaseModel):
++    """Base for Skills value types: matches `mcp_types`' internal `MCPModel` config.
++
++    `MCPModel` itself isn't public; every field defined below is already a
++    single word, so this only matters if a future field needs camelCase.
++    """
++
++    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
++
++
++class SkillResource(_SkillModel):
++    """One file in a skill's manifest: `{uri, digest, size}`.
++
++    Shape rules are intrinsic: a `digest` that isn't `sha256:` + 64 lowercase
++    hex characters, or a negative `size`, is rejected at construction.
++    """
++
++    uri: str
++    digest: Annotated[str, AfterValidator(_check_digest)]
++    """SHA-256 digest of the file's raw bytes, formatted `sha256:{64 hex chars}`."""
++    size: Annotated[int, Field(ge=0)]
++    """Length in bytes of the file's raw content."""
++
++
++Frontmatter = dict[str, Any]
++"""A skill's `SKILL.md` YAML frontmatter, rendered verbatim as JSON."""
++
++SkillResources = list[SkillResource] | Literal["dynamic"]
++"""A skill's complete resource manifest, or the `"dynamic"` marker (SEP-2640 Resources)."""
++
++
++class Skill(_SkillModel):
++    """An entry returned by `skills/list` or `skills/get`.
++
++    SEP-2640 conformance is intrinsic: constructing (or parsing) a `Skill`
++    validates the frontmatter `name`/`description`, and — unless `resources` is
++    `"dynamic"` — that every entry names a file within the skill's own directory,
++    with no duplicates and `SKILL.md` present. The `MAX_RESOURCES_PER_SKILL`
++    (512-entry) and `MAX_TOTAL_SIZE` (16-MiB) limits are SHOULD NOT thresholds,
++    not MUST NOT, so an over-limit manifest is accepted.
++    """
++
++    uri: str
++    """Resource URI of the skill's `SKILL.md`."""
++    frontmatter: Frontmatter
++    resources: SkillResources
++
++    @model_validator(mode="after")
++    def _check_conformance(self) -> Skill:
++        name = skill_name_from_uri(self.uri)
++        frontmatter_name = self.frontmatter.get("name")
++        if (
++            not isinstance(frontmatter_name, str)
++            or not _NAME_RE.fullmatch(frontmatter_name)
++            or len(frontmatter_name) > 64
++        ):
++            raise ValueError(f"skill {self.uri!r} frontmatter name must be 1-64 lowercase, digits, or hyphens")
++        if frontmatter_name != name:
++            raise ValueError(
++                f"skill {self.uri!r} frontmatter name {frontmatter_name!r} does not match URI name {name!r}"
++            )
++        description = self.frontmatter.get("description")
++        if not isinstance(description, str) or not (1 <= len(description) <= 1024):
++            raise ValueError(f"skill {self.uri!r} frontmatter description must contain 1 to 1024 characters")
++        if self.resources == "dynamic":
++            return self
++        seen: set[str] = set()
++        for resource in self.resources:
++            _validate_resource_uri_in_skill(self.uri, resource.uri)
++            if resource.uri in seen:
++                raise ValueError(f"skill {self.uri!r} lists resource {resource.uri!r} more than once")
++            seen.add(resource.uri)
++        if self.uri not in seen:
++            raise ValueError(f"skill {self.uri!r} resources does not include its own SKILL.md")
++        return self
++
++
++class ListSkillsParams(PaginatedRequestParams):
++    """Parameters for `skills/list`."""
++
++
++class ListSkillsResult(PaginatedResult, CacheableResult):
++    """Result of `skills/list`.
++
++    Each skill self-validates; on top of that, constructing (or parsing) this
++    result rejects two entries that share a `uri`.
++
++    `ttl_ms`/`cache_scope` are SEP-2549 fields inherited from `CacheableResult`;
++    unlike a core spec method, nothing sieves them off the wire for a
++    pre-2026-07-28 connection automatically (see `mcp.server.skills`), so
++    callers constructing this directly for such a connection must omit them.
++    """
++
++    skills: list[Skill]
++
++    @model_validator(mode="after")
++    def _check_unique_uris(self) -> ListSkillsResult:
++        seen: set[str] = set()
++        for skill in self.skills:
++            if skill.uri in seen:
++                raise ValueError(f"skills/list result lists skill {skill.uri!r} more than once")
++            seen.add(skill.uri)
++        return self
++
++
++class GetSkillParams(RequestParams):
++    """Parameters for `skills/get`."""
++
++    uri: str
++    """URI of the skill's `SKILL.md`."""
++
++
++class GetSkillResult(CacheableResult):
++    """Result of `skills/get`.
++
++    Like `ListSkillsResult`, this extends `CacheableResult`: the stable spec page
++    makes `GetSkillResult` carry SEP-2549's `ttl_ms`/`cache_scope`, the same
++    freshness hint `resources/read` gives. As on `skills/list`, nothing sieves
++    these fields off the wire for a pre-2026-07-28 connection automatically (see
++    `mcp.server.skills`), so a caller constructing this directly for such a
++    connection must omit them.
++    """
++
++    skill: Skill
++
++
++class ReadDirectoryParams(PaginatedRequestParams):
++    """Parameters for `resources/directory/read`."""
++
++    uri: str
++    """URI of the directory resource whose direct children are listed."""
++
++
++class ReadDirectoryResult(PaginatedResult):
++    """Result of `resources/directory/read`."""
++
++    resources: list[Resource]
++
++
++class ListSkillsRequest(Request[ListSkillsParams | None, Literal["skills/list"]]):
++    method: Literal["skills/list"] = "skills/list"
++    params: ListSkillsParams | None = None
++
++
++class GetSkillRequest(Request[GetSkillParams, Literal["skills/get"]]):
++    method: Literal["skills/get"] = "skills/get"
++    params: GetSkillParams
++
++
++class ReadDirectoryRequest(Request[ReadDirectoryParams, Literal["resources/directory/read"]]):
++    method: Literal["resources/directory/read"] = "resources/directory/read"
++    params: ReadDirectoryParams
++
++
++def skill_name_from_uri(uri: str) -> str:
++    """Return the skill `name` encoded in a `SKILL.md` resource URI.
++
++    Per SEP-2640 Resource Mapping, the final `<skill-path>` segment equals the
++    skill's `name`; for a bare `skill://<name>/SKILL.md` (no organizational
++    prefix) that segment is the authority.
++
++    Raises:
++        ValueError: If `uri` is not an absolute URI ending in `/SKILL.md`.
++    """
++    parts = urlsplit(uri)
++    if not parts.scheme or parts.query or parts.fragment:
++        raise ValueError(f"skill URI {uri!r} is not a valid absolute resource URI")
++    if not parts.path.endswith("/SKILL.md"):
++        raise ValueError(f"skill URI {uri!r} must end in /SKILL.md")
++    directory = parts.path[: -len("/SKILL.md")].strip("/")
++    if directory:
++        name = directory.rsplit("/", 1)[-1]
++    else:
++        name = parts.hostname or ""
++    if not name:
++        raise ValueError(f"skill URI {uri!r} has no skill name")
++    return name
++
++
++def _validate_resource_uri_in_skill(skill_uri: str, resource_uri: str) -> None:
++    """Raise `ValueError` unless `resource_uri` names a file within `skill_uri`'s directory."""
++    skill_parts = urlsplit(skill_uri)
++    resource_parts = urlsplit(resource_uri)
++    if not resource_parts.scheme or resource_parts.query or resource_parts.fragment:
++        raise ValueError(f"resource URI {resource_uri!r} is invalid")
++    if resource_uri.endswith("/"):
++        raise ValueError(f"resource URI {resource_uri!r} names a directory, not a file")
++    if skill_parts.scheme != resource_parts.scheme or skill_parts.netloc != resource_parts.netloc:
++        raise ValueError(f"resource URI {resource_uri!r} is outside the skill root {skill_uri!r}")
++    root = skill_parts.path[: -len("/SKILL.md")]
++    if resource_parts.path != skill_parts.path and not resource_parts.path.startswith(root + "/"):
++        raise ValueError(f"resource URI {resource_uri!r} is outside the skill root {skill_uri!r}")
++    if any(segment in (".", "..") for segment in resource_parts.path.split("/")):
++        raise ValueError(f"resource URI {resource_uri!r} contains a traversal segment")
++
++
++def parse_directory_uri(uri: str) -> tuple[str, str, str]:
++    """Split a directory resource URI into `(scheme, netloc, path)`.
++
++    Raises:
++        ValueError: If `uri` has a trailing slash, or is otherwise not a valid
++            absolute resource URI.
++    """
++    if uri.endswith("/"):
++        raise ValueError(f"directory URI {uri!r} must not have a trailing slash")
++    parts = urlsplit(uri)
++    if not parts.scheme or parts.query or parts.fragment:
++        raise ValueError(f"directory URI {uri!r} is not a valid absolute resource URI")
++    return parts.scheme, parts.netloc, parts.path
++
++
++def validate_directory_result(uri: str, result: ReadDirectoryResult) -> None:
++    """Validate that each entry in `result.resources` is a unique direct child of `uri`.
++
++    Checks containment and shape only — that every listed resource is a direct
++    child of `uri` with a unique `uri`. It cannot confirm the listing
++    is exhaustive, since it has no independent view of the directory's contents.
++
++    Raises:
++        ValueError: If `uri` is malformed, or any entry is not a direct child,
++            or two entries share a `uri`.
++    """
++    scheme, netloc, parent_path = parse_directory_uri(uri)
++    seen_uris: set[str] = set()
++    prefix = parent_path.rstrip("/") + "/" if parent_path.rstrip("/") else "/"
++    for resource in result.resources:
++        child = urlsplit(resource.uri)
++        if not child.scheme or child.query or child.fragment:
++            raise ValueError(f"directory {uri!r} child has invalid URI {resource.uri!r}")
++        if child.scheme != scheme or child.netloc != netloc:
++            raise ValueError(f"resource {resource.uri!r} is not a child of directory {uri!r}")
++        relative = child.path.removeprefix(prefix)
++        if relative == child.path or not relative or "/" in relative or relative in (".", ".."):
++            raise ValueError(f"resource {resource.uri!r} is not a direct child of directory {uri!r}")
++        if resource.uri in seen_uris:
++            raise ValueError(f"directory {uri!r} contains a duplicate child {resource.uri!r}")
++        seen_uris.add(resource.uri)

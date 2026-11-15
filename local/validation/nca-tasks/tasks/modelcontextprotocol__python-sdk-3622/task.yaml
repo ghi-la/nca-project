@@ -1,0 +1,15 @@
+base_commit: 08095791f0c8b8e6a0e8a137ca5ab4a511259ec7
+created_at: '2026-10-02T12:22:56Z'
+datasets:
+- nca/nca-bench
+environment_setup_commit: 08095791f0c8b8e6a0e8a137ca5ab4a511259ec7
+eval_type: pass_and_fail
+image: swebench/sweb.eval.x86_64.modelcontextprotocol_1776_python-sdk-3622:latest
+instance_id: modelcontextprotocol__python-sdk-3622
+issue_numbers:
+- '3598'
+log_parser: parse_log_pytest
+pull_number: 3622
+repo: modelcontextprotocol/python-sdk
+split: test
+version: spec-bdfba008

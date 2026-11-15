@@ -1,0 +1,15 @@
+base_commit: b6ac7852a2aaea3d8512aba6062dbc271ea90dcb
+created_at: '2026-09-21T14:39:46Z'
+datasets:
+- nca/nca-bench
+environment_setup_commit: b6ac7852a2aaea3d8512aba6062dbc271ea90dcb
+eval_type: pass_and_fail
+image: swebench/sweb.eval.x86_64.scrapy_1776_scrapy-8193:latest
+instance_id: scrapy__scrapy-8193
+issue_numbers:
+- '939'
+log_parser: parse_log_pytest
+pull_number: 8193
+repo: scrapy/scrapy
+split: test
+version: spec-8e6996a9

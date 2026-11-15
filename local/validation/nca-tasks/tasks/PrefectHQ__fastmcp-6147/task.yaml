@@ -1,0 +1,15 @@
+base_commit: fde5a7921281bae12267833c0b5624d5029229f6
+created_at: '2026-10-29T10:18:58Z'
+datasets:
+- nca/nca-bench
+environment_setup_commit: fde5a7921281bae12267833c0b5624d5029229f6
+eval_type: pass_and_fail
+image: swebench/sweb.eval.x86_64.prefecthq_1776_fastmcp-6147:latest
+instance_id: PrefectHQ__fastmcp-6147
+issue_numbers:
+- '6115'
+log_parser: parse_log_pytest
+pull_number: 6147
+repo: PrefectHQ/fastmcp
+split: test
+version: spec-a5288885

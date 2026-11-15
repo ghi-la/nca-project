@@ -1,0 +1,15 @@
+base_commit: beef13ac9996b49ecc4aa9c7363cc0dd20db3da3
+created_at: '2026-09-18T08:25:29Z'
+datasets:
+- nca/nca-bench
+environment_setup_commit: beef13ac9996b49ecc4aa9c7363cc0dd20db3da3
+eval_type: pass_and_fail
+image: swebench/sweb.eval.x86_64.celery_1776_celery-10668:latest
+instance_id: celery__celery-10668
+issue_numbers:
+- '4300'
+log_parser: parse_log_pytest
+pull_number: 10668
+repo: celery/celery
+split: test
+version: spec-284f8af1

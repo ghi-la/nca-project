@@ -1,0 +1,2 @@
+database backend does not store children
+The [`Task`](https://github.com/celery/celery/blob/main/celery/backends/database/models.py#L20-L27) and [`TaskExtended`](https://github.com/celery/celery/blob/main/celery/backends/database/models.py#L57-L62) models for the `database` backend do not include `children`. This means that when using any `database` backend, [`AsyncResult.children`](https://github.com/celery/celery/blob/main/celery/result.py#L424) is always empty, even if a task does have children.

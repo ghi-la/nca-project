@@ -1,0 +1,151 @@
+diff --git a/celery/backends/database/__init__.py b/celery/backends/database/__init__.py
+index d2a50fe2a09..81a41f4efbc 100644
+--- a/celery/backends/database/__init__.py
++++ b/celery/backends/database/__init__.py
+@@ -17,6 +17,7 @@
+ 
+ try:
+     from sqlalchemy.exc import DatabaseError, InterfaceError, InvalidRequestError
++    from sqlalchemy.orm import defer
+     from sqlalchemy.orm.exc import StaleDataError
+ except ImportError:
+     raise ImproperlyConfigured(
+@@ -137,21 +138,26 @@ def ResultSession(self, session_manager=None):
+             **self.engine_options)
+ 
+     def _query_task(self, session, task_id):
+-        """Query task by id, falling back to deferring children if missing from database."""
++        """Query task by id, falling back to deferring missing columns from database."""
+         try:
+             tasks = list(session.query(self.task_cls).filter(self.task_cls.task_id == task_id))
+             return tasks and tasks[0]
+         except DatabaseError as exc:
+-            if 'children' in str(exc).lower():
+-                from sqlalchemy.orm import defer
+-                tasks = list(session.query(self.task_cls).options(
+-                    defer(self.task_cls.children)
+-                ).filter(self.task_cls.task_id == task_id))
++            exc_str = str(exc).lower()
++            defers = []
++            if 'children' in exc_str and hasattr(self.task_cls, 'children'):
++                defers.append(defer(self.task_cls.children))
++            if 'stamps' in exc_str and hasattr(self.task_cls, 'stamps'):
++                defers.append(defer(self.task_cls.stamps))
++            if defers:
++                tasks = list(session.query(self.task_cls).options(*defers).filter(
++                    self.task_cls.task_id == task_id
++                ))
+                 return tasks and tasks[0]
+             raise
+ 
+-    def _store_result(self, task_id, result, state,
+-                      traceback=None, request=None, **kwargs):
++    def _store_result(self, task_id, result, state, traceback=None,
++                      request=None, **kwargs):
+         """Store return value and state of an executed task."""
+         session = self.ResultSession()
+         with session_cleanup(session):
+@@ -172,10 +178,10 @@ def _update_result(self, task, result, state, traceback=None,
+                                      traceback=traceback, request=request,
+                                      format_date=False, encode=True)
+ 
+-        # Exclude the primary key id, task_id, and children columns
+-        # as we should not set it None or handle children separately
++        # Exclude the primary key id, task_id, children, and stamps columns
++        # as we should not set it None or handle them separately
+         columns = [column.name for column in self.task_cls.__table__.columns
+-                   if column.name not in {'id', 'task_id', 'children'}]
++                   if column.name not in {'id', 'task_id', 'children', 'stamps'}]
+ 
+         # Iterate through the columns name of the table
+         # to set the value from meta.
+@@ -191,6 +197,20 @@ def _update_result(self, task, result, state, traceback=None,
+             else:
+                 setattr(task, 'children', None)
+ 
++        if hasattr(task, 'stamps') and 'stamps' in self.task_cls.__table__.columns:
++            stamped_headers = meta.get('stamped_headers')
++            if stamped_headers:
++                stamps_data = {
++                    h: meta.get(h) for h in stamped_headers if h in meta
++                }
++                stamps_info = {
++                    'stamped_headers': stamped_headers,
++                    'stamps': stamps_data,
++                }
++                setattr(task, 'stamps', ensure_bytes(self.encode(stamps_info)))
++            elif getattr(task, 'stamps', None) is None:
++                setattr(task, 'stamps', None)
++
+     def _get_task_meta_for(self, task_id):
+         """Get task meta-data for a task by id."""
+         session = self.ResultSession()
+@@ -208,6 +228,17 @@ def _get_task_meta_for(self, task_id):
+                 data['kwargs'] = self.decode(data['kwargs'])
+             if data.get('children', None) is not None:
+                 data['children'] = self.decode(data['children'])
++            raw_stamps = data.pop('stamps', None)
++            if raw_stamps is not None:
++                try:
++                    stamps_info = self.decode(raw_stamps)
++                    if isinstance(stamps_info, dict):
++                        if 'stamped_headers' in stamps_info:
++                            data['stamped_headers'] = stamps_info['stamped_headers']
++                        if 'stamps' in stamps_info and isinstance(stamps_info['stamps'], dict):
++                            data.update(stamps_info['stamps'])
++                except Exception:
++                    pass
+             return self.meta_from_decoded(data)
+ 
+     def _decode_stored_result(self, payload):
+diff --git a/celery/backends/database/models.py b/celery/backends/database/models.py
+index 4bcf90ef8dd..3c6e0fc9969 100644
+--- a/celery/backends/database/models.py
++++ b/celery/backends/database/models.py
+@@ -78,9 +78,14 @@ class TaskExtended(Task):
+     worker = sa.Column(sa.String(155), nullable=True)
+     retries = sa.Column(sa.Integer, nullable=True)
+     queue = sa.Column(sa.String(155), nullable=True)
++    stamps = sa.Column(sa.LargeBinary, nullable=True)
+ 
+     def to_dict(self):
+         task_dict = super().to_dict()
++        try:
++            stamps = self.stamps
++        except Exception:
++            stamps = None
+         task_dict.update({
+             'name': self.name,
+             'args': self.args,
+@@ -88,6 +93,7 @@ def to_dict(self):
+             'worker': self.worker,
+             'retries': self.retries,
+             'queue': self.queue,
++            'stamps': stamps,
+         })
+         return task_dict
+ 
+diff --git a/docs/userguide/configuration.rst b/docs/userguide/configuration.rst
+index 5c18241ae71..e4d4cbb548d 100644
+--- a/docs/userguide/configuration.rst
++++ b/docs/userguide/configuration.rst
+@@ -1003,7 +1003,18 @@ and client first and turn the setting on afterwards.
+ Default: ``False``
+ 
+ Enables extended task result attributes (name, args, kwargs, worker,
+-retries, queue) to be written to backend.
++retries, queue, stamps) to be written to backend.
++
++.. versionadded:: 5.7
++    Added storing task stamping metadata (``stamps``) in the database backend.
++
++.. note::
++
++    When using the database backend with :setting:`result_extended` set to ``True``,
++    task stamping metadata is stored in a ``stamps`` column. For existing database deployments
++    upgrading with an already-created ``celery_taskmeta`` table, operators must execute the
++    appropriate DDL migration to add the column before upgrading (e.g., ``ALTER TABLE celery_taskmeta ADD COLUMN stamps BLOB;``
++    or ``BYTEA`` on PostgreSQL); this migration is required as result writes will otherwise fail.
+ 
+ .. setting:: result_expires
+ 

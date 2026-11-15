@@ -1,0 +1,107 @@
+diff --git a/CHANGES.md b/CHANGES.md
+index 5e5ba2aa285..ce6d559756d 100644
+--- a/CHANGES.md
++++ b/CHANGES.md
+@@ -73,6 +73,8 @@
+   `from x import (  # fmt: skip`) when a standalone comment is among the bracket's
+   contents: the whole statement is now preserved instead of being reformatted (and
+   previously crashing) (#5161)
++- Fix an AST safety error when separate `type: ignore` comments in a parenthesized
++  attribute chain were merged onto one physical line (#5297)
+ - Preserve comments and blank lines outside requested ranges when formatting with
+   `--line-ranges` (#5175)
+ - Fix crash when `# fmt: skip` is used on one-line `async def`, `async with`, and
+diff --git a/src/black/linegen.py b/src/black/linegen.py
+index b6a0ddf66a3..463018f2f84 100644
+--- a/src/black/linegen.py
++++ b/src/black/linegen.py
+@@ -825,6 +825,7 @@ def transform_line(
+                     string_paren_strip,
+                     string_split,
+                     delimiter_split,
++                    type_ignore_comment_split,
+                     standalone_comment_split,
+                     string_paren_wrap,
+                     right_hand_split_with_omits,
+@@ -841,6 +842,7 @@ def transform_line(
+             if line.inside_brackets:
+                 transformers = [
+                     delimiter_split,
++                    type_ignore_comment_split,
+                     standalone_comment_split,
+                     right_hand_split_with_omits,
+                 ]
+@@ -1620,6 +1622,34 @@ def append_to_line(leaf: Leaf) -> Iterator[Line]:
+         yield current_line
+ 
+ 
++@dont_increase_indentation
++def type_ignore_comment_split(
++    line: Line, features: Collection[Feature], mode: Mode
++) -> Iterator[Line]:
++    """Keep multiple type ignores on their original physical lines."""
++    if not line.contains_multiple_type_ignores_at_current_depth() or not any(
++        leaf.type == token.DOT for leaf in line.leaves
++    ):
++        raise CannotSplit("Line does not have multiple type ignore comments")
++
++    current_line = Line(
++        mode=line.mode, depth=line.depth, inside_brackets=line.inside_brackets
++    )
++    for leaf in line.leaves:
++        current_line.append(leaf, preformatted=True)
++        comments = line.comments_after(leaf)
++        for comment in comments:
++            current_line.append(comment, preformatted=True)
++        if any(is_type_ignore_comment(comment, mode=mode) for comment in comments):
++            yield current_line
++            current_line = Line(
++                mode=line.mode, depth=line.depth, inside_brackets=line.inside_brackets
++            )
++
++    if current_line:
++        yield current_line
++
++
+ def _force_standalone_comment_split(line: Line) -> Iterator[Line]:
+     """Last-resort split at every standalone-comment boundary."""
+     current_line = Line(
+diff --git a/src/black/lines.py b/src/black/lines.py
+index b71de49e705..028d868d5fd 100644
+--- a/src/black/lines.py
++++ b/src/black/lines.py
+@@ -313,6 +313,18 @@ def contains_uncollapsable_type_comments(self) -> bool:
+ 
+         return False
+ 
++    def contains_multiple_type_ignores_at_current_depth(self) -> bool:
++        count = 0
++        for leaf in self.leaves:
++            if leaf.bracket_depth != 0:
++                continue
++            for comment in self.comments_after(leaf):
++                if is_type_ignore_comment(comment, mode=self.mode):
++                    count += 1
++                    if count > 1:
++                        return True
++        return False
++
+     def contains_unsplittable_type_ignore(self) -> bool:
+         if not self.leaves:
+             return False
+@@ -1532,6 +1544,15 @@ def can_omit_invisible_parens(
+     """
+     line = rhs.body
+ 
++    # Multiple type ignores must stay on separate physical lines. Keeping the
++    # optional parens gives the line transformer a safe place to split them.
++    if (
++        line.contains_multiple_type_ignores_at_current_depth()
++        and not line.bracket_tracker.delimiters
++        and any(leaf.type == token.DOT for leaf in line.leaves)
++    ):
++        return False
++
+     # Don't omit optional parens when the opening paren carries an inline comment.
+     # Omitting them re-parents the comment onto a different leaf after the next
+     # parse, which can make the RHS splitter choose a different shape on each

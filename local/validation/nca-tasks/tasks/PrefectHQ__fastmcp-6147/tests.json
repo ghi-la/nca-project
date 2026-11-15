@@ -1,0 +1,18 @@
+{
+  "FAIL_TO_PASS": [
+    "tests/server/test_callable_cache_lifetime.py::test_bound_method_cache_is_owned_by_its_instance",
+    "tests/server/test_callable_cache_lifetime.py::test_callable_cache_does_not_retain_a_dropped_closure[body-errors]",
+    "tests/server/test_callable_cache_lifetime.py::test_callable_cache_does_not_retain_a_dropped_closure[dependencies]",
+    "tests/server/test_callable_cache_lifetime.py::test_callable_cache_does_not_retain_a_dropped_closure[session-id]",
+    "tests/server/test_callable_cache_lifetime.py::test_callable_cache_does_not_retain_a_dropped_closure[type-adapter]",
+    "tests/server/test_callable_cache_lifetime.py::test_dependency_wrapper_caches_each_thread_option_separately",
+    "tests/server/test_callable_cache_lifetime.py::test_dropped_servers_leave_no_fastmcp_owned_tool_closures",
+    "tests/server/test_callable_cache_lifetime.py::test_method_without_instance_namespace_is_not_retained",
+    "tests/server/test_callable_cache_lifetime.py::test_partial_adapter_is_reused_without_retaining_its_bound_payload"
+  ],
+  "PASS_TO_PASS": [
+    "tests/server/test_callable_cache_lifetime.py::test_callable_cache_is_not_serialized_with_a_task_function",
+    "tests/server/test_callable_cache_lifetime.py::test_live_callable_keeps_its_cached_adapter",
+    "tests/server/test_callable_cache_lifetime.py::test_wrapped_function_does_not_reuse_the_source_functions_cache"
+  ]
+}

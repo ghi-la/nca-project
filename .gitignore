@@ -10,3 +10,8 @@ __pycache__/
 **/trajectories/
 **/logs/
 local/mining/cache/
+
+# validation outputs (large / regenerable)
+local/validation/nca-tasks/_logs/
+local/validation/nca-tasks/_work/
+local/validation/nca-tasks/_rejected/

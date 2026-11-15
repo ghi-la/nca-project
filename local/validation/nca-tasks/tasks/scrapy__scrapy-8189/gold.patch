@@ -1,0 +1,102 @@
+diff --git a/scrapy/core/downloader/handlers/_base_streaming.py b/scrapy/core/downloader/handlers/_base_streaming.py
+index 6e4dd687061..c7f4c82d8d1 100644
+--- a/scrapy/core/downloader/handlers/_base_streaming.py
++++ b/scrapy/core/downloader/handlers/_base_streaming.py
+@@ -23,7 +23,7 @@
+     normalize_bind_address,
+ )
+ from scrapy.utils.asyncio import is_asyncio_available
+-from scrapy.utils.url import add_http_if_no_scheme
++from scrapy.utils.url import _add_http_if_no_scheme
+ 
+ from ._base_http import BaseHttpDownloadHandler
+ 
+@@ -286,7 +286,7 @@ def _extract_proxy(request: Request) -> tuple[str | None, str | None]:
+         proxy: str | None = request.meta.get("proxy")
+         if not proxy:
+             return None, None
+-        proxy = add_http_if_no_scheme(proxy)
++        proxy = _add_http_if_no_scheme(proxy)
+         auth_header: bytes | None = request.headers.get(b"Proxy-Authorization")
+         return proxy, auth_header.decode("ascii") if auth_header else None
+ 
+diff --git a/scrapy/core/downloader/handlers/http11.py b/scrapy/core/downloader/handlers/http11.py
+index f3eaa3411ec..37b27c8a699 100644
+--- a/scrapy/core/downloader/handlers/http11.py
++++ b/scrapy/core/downloader/handlers/http11.py
+@@ -62,7 +62,7 @@
+ from scrapy.utils.deprecate import warn_on_deprecated_spider_attribute
+ from scrapy.utils.httpobj import urlparse_cached
+ from scrapy.utils.python import to_bytes, to_unicode
+-from scrapy.utils.url import add_http_if_no_scheme
++from scrapy.utils.url import _add_http_if_no_scheme
+ 
+ from ._base_http import BaseHttpDownloadHandler
+ 
+@@ -456,7 +456,7 @@ def _get_agent(self, request: Request, timeout: float) -> Agent:
+         bindaddress = normalize_bind_address(bindaddress)
+         proxy = request.meta.get("proxy")
+         if proxy:
+-            proxy = add_http_if_no_scheme(proxy)
++            proxy = _add_http_if_no_scheme(proxy)
+             proxy_parsed = urlparse(proxy)
+             proxy_host = proxy_parsed.hostname
+             proxy_port = proxy_parsed.port
+diff --git a/scrapy/utils/url.py b/scrapy/utils/url.py
+index 21ef4aac7ed..de2e38728c3 100644
+--- a/scrapy/utils/url.py
++++ b/scrapy/utils/url.py
+@@ -10,8 +10,11 @@
+ from typing import TYPE_CHECKING, TypeAlias
+ from urllib.parse import ParseResult, urlparse, urlunparse
+ 
++import w3lib.url
+ from w3lib.url import any_to_uri, parse_url
+ 
++from scrapy.exceptions import ScrapyDeprecationWarning
++
+ if TYPE_CHECKING:
+     from collections.abc import Iterable
+ 
+@@ -57,17 +60,25 @@ def url_has_any_extension(url: UrlT, extensions: Iterable[str]) -> bool:
+     return any(lowercase_path.endswith(ext) for ext in extensions)
+ 
+ 
+-def add_http_if_no_scheme(url: str) -> str:
+-    """Add http as the default scheme if it is missing from the url."""
+-    match = re.match(r"^\w+://", url, flags=re.IGNORECASE)
+-    if not match:
+-        parts = urlparse(url)
+-        scheme = "http:" if parts.netloc else "http://"
++def _add_http_if_no_scheme(url: str) -> str:
++    if not re.match(r"^\w+://", url, flags=re.IGNORECASE):
++        scheme = "http:" if urlparse(url).netloc else "http://"
+         url = scheme + url
+-
+     return url
+ 
+ 
++def add_http_if_no_scheme(url: str) -> str:
++    """Add http as the default scheme if it is missing from the url."""
++    if hasattr(w3lib.url, "add_http_if_no_scheme"):
++        warnings.warn(
++            "scrapy.utils.url.add_http_if_no_scheme() is deprecated, use "
++            "w3lib.url.add_http_if_no_scheme() instead.",
++            ScrapyDeprecationWarning,
++            stacklevel=2,
++        )
++    return _add_http_if_no_scheme(url)
++
++
+ def _is_posix_path(string: str) -> bool:
+     return bool(
+         re.match(
+@@ -115,7 +126,7 @@ def guess_scheme(url: str) -> str:
+     http:// otherwise."""
+     if _is_filesystem_path(url):
+         return any_to_uri(url)
+-    return add_http_if_no_scheme(url)
++    return _add_http_if_no_scheme(url)
+ 
+ 
+ def strip_url(

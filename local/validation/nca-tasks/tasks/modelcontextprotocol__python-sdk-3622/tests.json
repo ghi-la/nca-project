@@ -1,0 +1,22 @@
+{
+  "FAIL_TO_PASS": [
+    "tests/client/auth/extensions/test_identity_assertion.py::test_empty_client_secret_is_rejected"
+  ],
+  "PASS_TO_PASS": [
+    "tests/client/auth/extensions/test_identity_assertion.py::test_403_insufficient_scope_unions_challenged_scope_with_configured",
+    "tests/client/auth/extensions/test_identity_assertion.py::test_403_without_insufficient_scope_does_not_reauthorize",
+    "tests/client/auth/extensions/test_identity_assertion.py::test_asm_404_at_configured_issuer_raises_before_minting_assertion",
+    "tests/client/auth/extensions/test_identity_assertion.py::test_asm_5xx_stops_discovery_and_raises",
+    "tests/client/auth/extensions/test_identity_assertion.py::test_asm_with_off_origin_token_endpoint_is_rejected_before_minting_assertion",
+    "tests/client/auth/extensions/test_identity_assertion.py::test_asm_with_wrong_issuer_is_rejected_before_minting_assertion",
+    "tests/client/auth/extensions/test_identity_assertion.py::test_client_secret_basic_sends_basic_header_not_body_secret",
+    "tests/client/auth/extensions/test_identity_assertion.py::test_empty_issuer_is_rejected",
+    "tests/client/auth/extensions/test_identity_assertion.py::test_no_configured_scope_omits_scope_and_backfills_from_request",
+    "tests/client/auth/extensions/test_identity_assertion.py::test_on_401_exchanges_assertion_at_configured_issuer_and_retries",
+    "tests/client/auth/extensions/test_identity_assertion.py::test_origin_normalizes_default_ports",
+    "tests/client/auth/extensions/test_identity_assertion.py::test_resource_server_metadata_is_never_consulted",
+    "tests/client/auth/extensions/test_identity_assertion.py::test_second_401_re_exchanges_without_refetching_asm",
+    "tests/client/auth/extensions/test_identity_assertion.py::test_stored_token_is_reused_without_reauthorizing",
+    "tests/client/auth/extensions/test_identity_assertion.py::test_token_endpoint_error_surfaces_as_oauth_token_error"
+  ]
+}

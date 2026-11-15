@@ -1,0 +1,15 @@
+base_commit: 91941ed4d3985d59def99e090baa3f880c626cc8
+created_at: '2026-09-09T18:01:24Z'
+datasets:
+- nca/nca-bench
+environment_setup_commit: 91941ed4d3985d59def99e090baa3f880c626cc8
+eval_type: pass_and_fail
+image: swebench/sweb.eval.x86_64.modelcontextprotocol_1776_python-sdk-3485:latest
+instance_id: modelcontextprotocol__python-sdk-3485
+issue_numbers:
+- '3486'
+log_parser: parse_log_pytest
+pull_number: 3485
+repo: modelcontextprotocol/python-sdk
+split: test
+version: spec-bdfba008

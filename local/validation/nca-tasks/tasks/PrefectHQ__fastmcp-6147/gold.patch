@@ -1,0 +1,245 @@
+diff --git a/fastmcp_slim/fastmcp/server/dependencies.py b/fastmcp_slim/fastmcp/server/dependencies.py
+index e326867142..f10e9c0187 100644
+--- a/fastmcp_slim/fastmcp/server/dependencies.py
++++ b/fastmcp_slim/fastmcp/server/dependencies.py
+@@ -15,7 +15,6 @@
+ from contextlib import AsyncExitStack, asynccontextmanager, contextmanager
+ from contextvars import ContextVar
+ from dataclasses import dataclass
+-from functools import lru_cache
+ from types import TracebackType
+ from typing import TYPE_CHECKING, Any, Protocol, cast, get_type_hints, runtime_checkable
+ 
+@@ -42,6 +41,7 @@
+ from fastmcp.exceptions import FastMCPError
+ from fastmcp.server.auth import AccessToken
+ from fastmcp.server.http import _current_http_request
++from fastmcp.utilities._callable_cache import cache_on_callable
+ from fastmcp.utilities.async_utils import (
+     call_sync_fn_in_threadpool,
+     is_coroutine_function,
+@@ -728,7 +728,7 @@ def get_access_token() -> AccessToken | None:
+ # --- Schema generation helper ---
+ 
+ 
+-@lru_cache(maxsize=5000)
++@cache_on_callable
+ def without_injected_parameters(
+     fn: Callable[..., Any], *, run_in_thread: bool = True
+ ) -> Callable[..., Any]:
+diff --git a/fastmcp_slim/fastmcp/server/sessions.py b/fastmcp_slim/fastmcp/server/sessions.py
+index 82ef061a21..17298b28d8 100644
+--- a/fastmcp_slim/fastmcp/server/sessions.py
++++ b/fastmcp_slim/fastmcp/server/sessions.py
+@@ -41,7 +41,6 @@
+ import json
+ import time
+ from collections.abc import Callable, Sequence
+-from functools import lru_cache
+ from types import TracebackType
+ from typing import (
+     TYPE_CHECKING,
+@@ -61,6 +60,7 @@
+ from fastmcp.exceptions import FastMCPError
+ from fastmcp.server.dependencies import get_access_token, get_server, get_session
+ from fastmcp.server.providers.base import Provider
++from fastmcp.utilities._callable_cache import cache_on_callable
+ from fastmcp.utilities.logging import get_logger
+ 
+ if TYPE_CHECKING:
+@@ -339,7 +339,7 @@ class _SessionIdMarker:
+ SessionId = Annotated[str, _SessionIdMarker()]
+ 
+ 
+-@lru_cache(maxsize=5000)
++@cache_on_callable
+ def session_id_parameter_names(fn: Callable[..., object]) -> tuple[str, ...]:
+     """Names of a function's parameters annotated with `SessionId`.
+ 
+diff --git a/fastmcp_slim/fastmcp/tools/function_tool.py b/fastmcp_slim/fastmcp/tools/function_tool.py
+index 872d31310a..0706dd4096 100644
+--- a/fastmcp_slim/fastmcp/tools/function_tool.py
++++ b/fastmcp_slim/fastmcp/tools/function_tool.py
+@@ -7,7 +7,6 @@
+ import logging
+ from collections.abc import Callable
+ from dataclasses import dataclass, field
+-from functools import lru_cache
+ from types import MethodType
+ from typing import (
+     Annotated,
+@@ -38,6 +37,7 @@
+     ToolResult,
+ )
+ from fastmcp.tools.function_parsing import ParsedFunction, _is_object_schema
++from fastmcp.utilities._callable_cache import cache_on_callable
+ from fastmcp.utilities.async_utils import (
+     call_sync_fn_in_threadpool,
+     is_coroutine_function,
+@@ -80,7 +80,7 @@ def _materialize_sync_generator(result: Any) -> Any:
+     return result
+ 
+ 
+-@lru_cache(maxsize=5000)
++@cache_on_callable
+ def _wrap_body_errors(
+     fn: Callable[..., Any], *, materialize_generators: bool = False
+ ) -> Callable[..., Any]:
+diff --git a/fastmcp_slim/fastmcp/utilities/_callable_cache.py b/fastmcp_slim/fastmcp/utilities/_callable_cache.py
+new file mode 100644
+index 0000000000..dfeb35deee
+--- /dev/null
++++ b/fastmcp_slim/fastmcp/utilities/_callable_cache.py
+@@ -0,0 +1,82 @@
++"""Memoize callable metadata without making the callable process-owned."""
++
++import inspect
++import weakref
++from collections.abc import Callable
++from dataclasses import dataclass, field
++from functools import wraps
++from threading import RLock
++from typing import Any, ParamSpec, TypeVar
++
++P = ParamSpec("P")
++R = TypeVar("R")
++_CACHE_ATTRIBUTE = "__fastmcp_callable_cache__"
++
++
++@dataclass
++class _CallableCache:
++    owner: weakref.ReferenceType[Any] | None
++    values: dict[tuple[Any, ...], Any] = field(default_factory=dict)
++
++    def __reduce__(self) -> tuple[type, tuple[None]]:
++        # Tasks can pickle user functions. Metadata is process-local and may
++        # contain weakrefs or adapters; a restored callable builds it afresh.
++        return type(self), (None,)
++
++
++def cache_on_callable(build: Callable[P, R]) -> Callable[P, R]:
++    """Cache on the first argument, or its instance for a bound method.
++
++    Wrapper and TypeAdapter values can refer back to their callable, so a weak
++    key alone cannot prevent retention. Owning the values on the callable makes
++    the whole cycle collectable. Callables without a writable namespace or weak
++    reference support are evaluated uncached instead of retained globally.
++    """
++    first_parameter = next(iter(inspect.signature(build).parameters))
++    lock = RLock()
++
++    @wraps(build)
++    def cached(*args: P.args, **kwargs: P.kwargs) -> R:
++        try:
++            target = args[0]
++        except IndexError:
++            if first_parameter not in kwargs:
++                return build(*args, **kwargs)
++            target = kwargs[first_parameter]
++        if inspect.ismethod(target):
++            method = target.__func__
++            owner = target.__self__
++        else:
++            method = None
++            owner = target
++        options = tuple((k, v) for k, v in kwargs.items() if k != first_parameter)
++        key = (build, method, args[1:], options)
++        try:
++            namespace = vars(owner)
++            owner_ref = weakref.ref(owner)
++        except TypeError:
++            return build(*args, **kwargs)
++
++        with lock:
++            cache = namespace.get(_CACHE_ATTRIBUTE)
++            # Function wrappers often copy __dict__. Never reuse the source
++            # function's metadata on a distinct wrapper with a different schema.
++            if (
++                not isinstance(cache, _CallableCache)
++                or cache.owner is None
++                or cache.owner() is not owner
++            ):
++                cache = _CallableCache(owner_ref)
++                try:
++                    namespace[_CACHE_ATTRIBUTE] = cache
++                except TypeError:
++                    return build(*args, **kwargs)
++            if key in cache.values:
++                return cache.values[key]
++
++        value = build(*args, **kwargs)
++        with lock:
++            cache.values[key] = value
++        return value
++
++    return cached
+diff --git a/fastmcp_slim/fastmcp/utilities/types.py b/fastmcp_slim/fastmcp/utilities/types.py
+index 56d77e59cd..ce2718a710 100644
+--- a/fastmcp_slim/fastmcp/utilities/types.py
++++ b/fastmcp_slim/fastmcp/utilities/types.py
+@@ -5,7 +5,7 @@
+ import mimetypes
+ import os
+ from collections.abc import Callable
+-from functools import lru_cache
++from functools import lru_cache, partial
+ from pathlib import Path
+ from types import EllipsisType, UnionType
+ from typing import (
+@@ -17,6 +17,7 @@
+     get_args,
+     get_origin,
+     get_type_hints,
++    overload,
+ )
+ from urllib.parse import quote
+ 
+@@ -25,6 +26,8 @@
+ from pydantic import AnyUrl, BaseModel, ConfigDict, Field, TypeAdapter, UrlConstraints
+ from typing_extensions import TypeVar
+ 
++from fastmcp.utilities._callable_cache import cache_on_callable
++
+ T = TypeVar("T", default=Any)
+ 
+ # TODO(sdkv2): the SDK's `mcp.types.AnyFunction` alias was removed with the
+@@ -52,14 +55,37 @@ def get_function_type_hints(fn: Callable[..., Any]) -> dict[str, Any]:
+     return get_type_hints(fn, include_extras=True)
+ 
+ 
+-@lru_cache(maxsize=5000)
+-def get_cached_typeadapter(cls: T) -> TypeAdapter[T]:
++@overload
++def get_cached_typeadapter(cls: type[T]) -> TypeAdapter[T]: ...
++
++
++@overload
++def get_cached_typeadapter(cls: Any) -> TypeAdapter[Any]: ...
++
++
++def get_cached_typeadapter(cls: Any) -> TypeAdapter[Any]:
+     """
+     TypeAdapters are heavy objects, and in an application context we'd typically
+     create them once in a global scope and reuse them as often as possible.
+     However, this isn't feasible for user-generated functions. Instead, we use a
+     cache to minimize the cost of creating them as much as possible.
+     """
++    if inspect.isfunction(cls) or inspect.ismethod(cls) or isinstance(cls, partial):
++        return _get_callable_typeadapter(cls)
++    return _get_type_typeadapter(cls)
++
++
++@cache_on_callable
++def _get_callable_typeadapter(cls: T) -> TypeAdapter[T]:
++    return _create_typeadapter(cls)
++
++
++@lru_cache(maxsize=5000)
++def _get_type_typeadapter(cls: T) -> TypeAdapter[T]:
++    return _create_typeadapter(cls)
++
++
++def _create_typeadapter(cls: T) -> TypeAdapter[T]:
+     # For functions, process annotations to handle forward references and convert
+     # Annotated[Type, "string"] to Annotated[Type, Field(description="string")]
+     if inspect.isfunction(cls) or inspect.ismethod(cls):

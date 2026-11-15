@@ -1,0 +1,15 @@
+base_commit: d467a3783c4ac898fbaefda86bdcc609fd57870f
+created_at: '2026-09-27T07:03:13Z'
+datasets:
+- nca/nca-bench
+environment_setup_commit: d467a3783c4ac898fbaefda86bdcc609fd57870f
+eval_type: pass_and_fail
+image: swebench/sweb.eval.x86_64.celery_1776_celery-10714:latest
+instance_id: celery__celery-10714
+issue_numbers:
+- '10713'
+log_parser: parse_log_pytest
+pull_number: 10714
+repo: celery/celery
+split: test
+version: spec-284f8af1

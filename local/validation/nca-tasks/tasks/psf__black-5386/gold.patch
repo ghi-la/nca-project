@@ -1,0 +1,189 @@
+diff --git a/CHANGES.md b/CHANGES.md
+index 5e5ba2aa285..2724d76371f 100644
+--- a/CHANGES.md
++++ b/CHANGES.md
+@@ -112,6 +112,9 @@
+ 
+ <!-- Changes to how Black can be configured -->
+ 
++- Fall back to the default configuration, with a warning, when the given sources share
++  no common project root (for example, they are on different drives on Windows) instead
++  of crashing (#5386)
+ - Fix `find_project_root` returning a stale cached result when `--code` is used from
+   different working directories in the same process. The CWD fallback (used when no
+   `srcs` are given) is now resolved before the `lru_cache` key is computed, so each
+diff --git a/src/black/__init__.py b/src/black/__init__.py
+index e719f817f8f..8b830d869e1 100644
+--- a/src/black/__init__.py
++++ b/src/black/__init__.py
+@@ -618,6 +618,20 @@ def main(
+     )
+     ctx.obj["root"] = root
+ 
++    if (
++        code is None
++        and root is None
++        and not quiet
++        and ctx.get_parameter_source("config") != ParameterSource.COMMANDLINE
++    ):
++        err(
++            "No project root could be identified: the given sources share no"
++            " common parent directory (for example, they are on different"
++            " drives). Black will use its default configuration. Pass"
++            " --config to select a configuration file or --quiet to silence"
++            " this warning."
++        )
++
+     if verbose:
+         if root:
+             out(
+@@ -717,7 +731,6 @@ def main(
+             lines=lines,
+         )
+     else:
+-        assert root is not None  # root is only None if code is not None
+         try:
+             sources = get_sources(
+                 root=root,
+@@ -778,7 +791,7 @@ def main(
+ 
+ def get_sources(
+     *,
+-    root: Path,
++    root: Path | None,
+     src: tuple[str, ...],
+     quiet: bool,
+     verbose: bool,
+@@ -792,7 +805,9 @@ def get_sources(
+     """Compute the set of files to be formatted."""
+     sources: set[Path] = set()
+ 
+-    assert root.is_absolute(), f"INTERNAL ERROR: `root` must be absolute but is {root}"
++    assert (
++        root is None or root.is_absolute()
++    ), f"INTERNAL ERROR: `root` must be absolute but is {root}"
+     using_default_exclude = exclude is None
+     exclude = re_compile_maybe_verbose(DEFAULT_EXCLUDES) if exclude is None else exclude
+     gitignore: dict[Path, GitIgnoreSpec] | None = None
+@@ -812,14 +827,22 @@ def get_sources(
+             path = Path(s)
+             is_stdin = False
+ 
++        # When the sources share no common parent, there is no project root.
++        # Fall back to a per-source root so that exclusion, symlink, and
++        # gitignore handling still work for each source independently.
++        if root is None:
++            src_root = path.resolve() if path.is_dir() else path.resolve().parent
++        else:
++            src_root = root
++
+         # Compare the logic here to the logic in `gen_python_files`.
+         if is_stdin or path.is_file():
+-            if resolves_outside_root_or_cannot_stat(path, root, report):
++            if resolves_outside_root_or_cannot_stat(path, src_root, report):
+                 if verbose:
+                     out(f'Skipping invalid source: "{path}"', fg="red")
+                 continue
+ 
+-            root_relative_path = best_effort_relative_path(path, root).as_posix()
++            root_relative_path = best_effort_relative_path(path, src_root).as_posix()
+             root_relative_path = "/" + root_relative_path
+ 
+             # Hard-exclude any files that matches the `--force-exclude` regex.
+@@ -841,19 +864,19 @@ def get_sources(
+                 out(f'Found input source: "{path}"', fg="blue")
+             sources.add(path)
+         elif path.is_dir():
+-            path = root / (path.resolve().relative_to(root))
++            path = src_root / (path.resolve().relative_to(src_root))
+             if verbose:
+                 out(f'Found input source directory: "{path}"', fg="blue")
+ 
+             if using_default_exclude:
+                 gitignore = {
+-                    root: root_gitignore,
++                    src_root: root_gitignore,
+                     path: get_gitignore(path),
+                 }
+             sources.update(
+                 gen_python_files(
+                     path.iterdir(),
+-                    root,
++                    src_root,
+                     include,
+                     exclude,
+                     extend_exclude,
+diff --git a/src/black/files.py b/src/black/files.py
+index 0e2d077b519..71e23241cb8 100644
+--- a/src/black/files.py
++++ b/src/black/files.py
+@@ -44,7 +44,7 @@ def _cached_resolve(path: Path) -> Path:
+ 
+ def find_project_root(
+     srcs: Sequence[str | Path], stdin_filename: str | None = None
+-) -> tuple[Path, str]:
++) -> tuple[Path | None, str | None]:
+     """Return a directory containing .git, .hg, or pyproject.toml.
+ 
+     pyproject.toml files are only considered if they contain a [tool.black]
+@@ -56,6 +56,10 @@ def find_project_root(
+     If no directory in the tree contains a marker that would specify it's the
+     project root, the root of the file system is returned.
+ 
++    If the sources share no common parent at all (for example, they live on
++    different drives on Windows), there is no project root and
++    ``(None, None)`` is returned.
++
+     Returns a two-tuple with the first element as the project root path and
+     the second element as a string describing the method by which the
+     project root was discovered.
+@@ -74,7 +78,7 @@ def find_project_root(
+ 
+ 
+ @lru_cache
+-def _find_project_root_cached(srcs: tuple[str, ...]) -> tuple[Path, str]:
++def _find_project_root_cached(srcs: tuple[str, ...]) -> tuple[Path | None, str | None]:
+     path_srcs = [Path(src) for src in srcs]
+ 
+     # A list of lists of parents for each 'src'. 'src' is included as a
+@@ -83,10 +87,10 @@ def _find_project_root_cached(srcs: tuple[str, ...]) -> tuple[Path, str]:
+         list(path.parents) + ([path] if path.is_dir() else []) for path in path_srcs
+     ]
+ 
+-    common_base = max(
+-        set.intersection(*(set(parents) for parents in src_parents)),
+-        key=lambda path: path.parts,
+-    )
++    common_parents = set.intersection(*(set(parents) for parents in src_parents))
++    if not common_parents:
++        return None, None
++    common_base = max(common_parents, key=lambda path: path.parts)
+ 
+     for directory in (common_base, *common_base.parents):
+         if (directory / ".git").exists():
+@@ -108,9 +112,10 @@ def find_pyproject_toml(
+ ) -> str | None:
+     """Find the absolute filepath to a pyproject.toml if it exists"""
+     path_project_root, _ = find_project_root(path_search_start, stdin_filename)
+-    path_pyproject_toml = path_project_root / "pyproject.toml"
+-    if path_pyproject_toml.is_file():
+-        return str(path_pyproject_toml)
++    if path_project_root is not None:
++        path_pyproject_toml = path_project_root / "pyproject.toml"
++        if path_pyproject_toml.is_file():
++            return str(path_pyproject_toml)
+ 
+     try:
+         path_user_pyproject_toml = find_user_pyproject_toml()
+@@ -246,8 +251,10 @@ def find_user_pyproject_toml() -> Path:
+ 
+ 
+ @lru_cache
+-def get_gitignore(root: Path) -> GitIgnoreSpec:
++def get_gitignore(root: Path | None) -> GitIgnoreSpec:
+     """Return a GitIgnoreSpec matching gitignore content if present."""
++    if root is None:
++        return GitIgnoreSpec.from_lines([])
+     gitignore = root / ".gitignore"
+     lines: list[str] = []
+     if gitignore.is_file():

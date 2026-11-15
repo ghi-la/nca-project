@@ -1,0 +1,39 @@
+diff --git a/celery/backends/azureblockblob.py b/celery/backends/azureblockblob.py
+index 071c4d2c78a..3ab0a9fc8e6 100644
+--- a/celery/backends/azureblockblob.py
++++ b/celery/backends/azureblockblob.py
+@@ -174,7 +174,12 @@ def delete(self, key):
+             blob=f'{self.base_path}{key}',
+         )
+ 
+-        blob_client.delete_blob()
++        try:
++            blob_client.delete_blob()
++        except ResourceNotFoundError:
++            # deleting an already-expired, already-forgotten or never-stored
++            # result must keep forget() idempotent, like the other KV backends
++            pass
+ 
+     def as_uri(self, include_password=False):
+         if include_password:
+diff --git a/celery/backends/cosmosdbsql.py b/celery/backends/cosmosdbsql.py
+index e32b13f2e78..01d625c1349 100644
+--- a/celery/backends/cosmosdbsql.py
++++ b/celery/backends/cosmosdbsql.py
+@@ -213,6 +213,13 @@ def delete(self, key):
+         LOGGER.debug("Deleting CosmosDB document %s/%s/%s",
+                      self._database_name, self._collection_name, key)
+ 
+-        self._client.DeleteDocument(
+-            self._get_document_link(key),
+-            self._get_partition_key(key))
++        try:
++            self._client.DeleteDocument(
++                self._get_document_link(key),
++                self._get_partition_key(key))
++        except HTTPFailure as ex:
++            if ex.status_code != ERROR_NOT_FOUND:
++                raise
++            # deleting an already-expired, already-forgotten or never-stored
++            # result must keep forget() idempotent, like the other KV backends
++            return

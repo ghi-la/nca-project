@@ -1,0 +1,193 @@
+diff --git a/docs/advanced/header-parameters.md b/docs/advanced/header-parameters.md
+new file mode 100644
+index 0000000000..a47be2f874
+--- /dev/null
++++ b/docs/advanced/header-parameters.md
+@@ -0,0 +1,47 @@
++# Header parameters
++
++Most servers never need this.
++
++A gateway or load balancer in front of your server can only route on what it can read without parsing the body. Mark a tool argument with `x-mcp-header`, and clients on the `2026-07-28` **[protocol version](../protocol-versions.md)** send its value as an HTTP header as well.
++
++## Mark an argument
++
++The mark is one extra key in the argument's JSON Schema. On `MCPServer`, `Field` puts it there:
++
++```python title="server.py" hl_lines="13"
++--8<-- "docs_src/header_parameters/tutorial001.py"
++```
++
++* Over Streamable HTTP on `2026-07-28`, a client that has listed the tool sends `Mcp-Param-Region` alongside the body, and the server rejects a call where the two disagree.
++* Every other connection ignores the annotation.
++
++Your function doesn't change: `region` still arrives as an argument.
++
++## What can be marked
++
++`str`, `int` and `bool` arguments. Anything else is refused when the tool is registered, with `InvalidSignature`.
++
++That includes `str | None`, which has no single type. An optional argument needs its schema spelled out, with pydantic's `WithJsonSchema`:
++
++```python
++region: Annotated[str | None, WithJsonSchema({"type": "string", "x-mcp-header": "Region"})] = None
++```
++
++## On the low-level `Server`
++
++There you write `input_schema` by hand, so the key goes straight in:
++
++```python title="server.py" hl_lines="18"
++--8<-- "docs_src/header_parameters/tutorial002.py"
++```
++
++* Nothing checks the annotation for you: an invalid one is served, and `2026-07-28` clients leave the tool out of their listing.
++
++## Recap
++
++* `x-mcp-header` on a tool argument makes `2026-07-28` clients repeat it as an `Mcp-Param-*` HTTP header.
++* The server rejects a call whose header and body disagree.
++* Only `str`, `int` and `bool` arguments can be marked. `MCPServer` raises `InvalidSignature` for anything else.
++* The low-level `Server` checks nothing, and clients drop a tool whose annotation is invalid.
++
++The rest of the hand-written `Server` API is **[The low-level Server](low-level-server.md)**.
+diff --git a/docs/advanced/index.md b/docs/advanced/index.md
+index 92af6d1782..057924efd2 100644
+--- a/docs/advanced/index.md
++++ b/docs/advanced/index.md
+@@ -9,6 +9,8 @@ layer is in the way:
+   methods of your own.
+ * **[Pagination](pagination.md)** and **[Middleware](middleware.md)**: two things you
+   can *only* do on the low-level `Server`.
++* **[Header parameters](header-parameters.md)**: let a gateway route a tool call on one
++  of its arguments.
+ * **[Extensions](extensions.md)** and **[MCP Apps](apps.md)**: the protocol's
+   extension surface. Compose extension packages into a server, or write your own.
+ 
+diff --git a/docs/troubleshooting.md b/docs/troubleshooting.md
+index bb7dfda4f9..e23b5b16e1 100644
+--- a/docs/troubleshooting.md
++++ b/docs/troubleshooting.md
+@@ -123,6 +123,14 @@ Add the parentheses. `@mcp.resource(...)` and `@mcp.prompt()` say the same thing
+     tools, has this shape: run `python server.py` yourself and read the traceback. A type checker
+     also catches it: a function is not a valid `name=`.
+ 
++## `InvalidSignature: Tool '<name>' has an invalid x-mcp-header annotation: <reason>`
++
++A tool argument is marked with `x-mcp-header` in a way the spec doesn't allow, and `<reason>` says which rule it breaks. Clients on `2026-07-28` would leave such a tool out of their listing, so the SDK refuses to register it.
++
++Only `str`, `int` and `bool` arguments can be marked, and `str | None` is none of them. **[Header parameters](advanced/header-parameters.md)** has the spelling for an optional argument.
++
++Like the entry above, this raises when the module is **imported**, before any client connects.
++
+ ## `Tool already exists: <name>`
+ 
+ Two registrations used the same tool name. The **first** one wins, the second is silently dropped, and this warning in the *server log* is the only signal:
+@@ -420,6 +428,7 @@ mcp = MCPServer("Weather", request_state_security=RequestStateSecurity(keys=[key
+ * `ExceptionGroup: unhandled errors in a TaskGroup` is never the error. Read the **last line**; catching `MCPError` *inside* the `async with Client(...)` block skips the wrapping entirely.
+ * `call_tool` does not raise for a failing tool. `Error executing tool ...` and `Unknown tool: ...` are results: check `result.is_error`. No message after the tool name means it crashed, and the traceback is in the server log.
+ * `Client must be used within an async context manager` -> use `async with`. `Use @tool() instead of @tool` -> add the parentheses.
++* `has an invalid x-mcp-header annotation` -> only `str`, `int` and `bool` arguments can be marked.
+ * `Tool already exists:` in the server log is the only sign that two same-named tools collapsed into one.
+ * One 421, three spellings: `Server returned an error response` (the python `Client`), `421 Misdirected Request` / `Invalid Host header` (everything else), `Invalid Host header: <host>` (the server log). Fix: `transport_security=TransportSecuritySettings(allowed_hosts=[...])`.
+ * `Task group is not initialized` -> a mounted app whose host lifespan never entered `mcp.session_manager.run()`.
+diff --git a/docs_src/header_parameters/__init__.py b/docs_src/header_parameters/__init__.py
+new file mode 100644
+index 0000000000..e69de29bb2
+diff --git a/docs_src/header_parameters/tutorial001.py b/docs_src/header_parameters/tutorial001.py
+new file mode 100644
+index 0000000000..c7a5c52ede
+--- /dev/null
++++ b/docs_src/header_parameters/tutorial001.py
+@@ -0,0 +1,16 @@
++from typing import Annotated
++
++from pydantic import Field
++
++from mcp.server import MCPServer
++
++mcp = MCPServer("Bookshop")
++
++
++@mcp.tool()
++def check_stock(
++    title: str,
++    region: Annotated[str, Field(json_schema_extra={"x-mcp-header": "Region"})],
++) -> str:
++    """Count the copies of a book in one region's warehouses."""
++    return f"{title}: 3 copies in {region}."
+diff --git a/docs_src/header_parameters/tutorial002.py b/docs_src/header_parameters/tutorial002.py
+new file mode 100644
+index 0000000000..147d5234c5
+--- /dev/null
++++ b/docs_src/header_parameters/tutorial002.py
+@@ -0,0 +1,36 @@
++from mcp.server import Server, ServerRequestContext
++from mcp.types import (
++    CallToolRequestParams,
++    CallToolResult,
++    ListToolsResult,
++    PaginatedRequestParams,
++    TextContent,
++    Tool,
++)
++
++CHECK_STOCK = Tool(
++    name="check_stock",
++    description="Count the copies of a book in one region's warehouses.",
++    input_schema={
++        "type": "object",
++        "properties": {
++            "title": {"type": "string"},
++            "region": {"type": "string", "x-mcp-header": "Region"},
++        },
++        "required": ["title", "region"],
++    },
++)
++
++
++async def list_tools(ctx: ServerRequestContext, params: PaginatedRequestParams | None) -> ListToolsResult:
++    return ListToolsResult(tools=[CHECK_STOCK])
++
++
++async def call_tool(ctx: ServerRequestContext, params: CallToolRequestParams) -> CallToolResult:
++    args = params.arguments or {}
++    text = f"{args['title']}: 3 copies in {args['region']}."
++    return CallToolResult(content=[TextContent(type="text", text=text)])
++
++
++server = Server("Bookshop", on_list_tools=list_tools, on_call_tool=call_tool)
++app = server.streamable_http_app()
+diff --git a/mkdocs.yml b/mkdocs.yml
+index a75053326f..446e676344 100644
+--- a/mkdocs.yml
++++ b/mkdocs.yml
+@@ -65,6 +65,7 @@ nav:
+       - The low-level Server: advanced/low-level-server.md
+       - Pagination: advanced/pagination.md
+       - Middleware: advanced/middleware.md
++      - Header parameters: advanced/header-parameters.md
+       - Extensions: advanced/extensions.md
+       - MCP Apps: advanced/apps.md
+   - Troubleshooting: troubleshooting.md
+diff --git a/src/mcp/server/mcpserver/tools/base.py b/src/mcp/server/mcpserver/tools/base.py
+index 4a8bed792e..787f1761b2 100644
+--- a/src/mcp/server/mcpserver/tools/base.py
++++ b/src/mcp/server/mcpserver/tools/base.py
+@@ -24,6 +24,7 @@
+ from mcp.server.mcpserver.utilities.func_metadata import FuncMetadata, func_metadata
+ from mcp.shared._callable_inspection import is_async_callable
+ from mcp.shared.exceptions import MCPError
++from mcp.shared.inbound import find_invalid_x_mcp_header
+ from mcp.shared.tool_name_validation import validate_and_warn_tool_name
+ 
+ if TYPE_CHECKING:
+@@ -104,6 +105,8 @@ def from_function(
+             structured_output=structured_output,
+         )
+         parameters = func_arg_metadata.arg_model.model_json_schema(by_alias=True)
++        if (reason := find_invalid_x_mcp_header(parameters)) is not None:
++            raise InvalidSignature(f"Tool {func_name!r} has an invalid x-mcp-header annotation: {reason}")
+ 
+         # Match `model_dump_one_level`'s kwarg keys (alias when present, else field name)
+         # so a by-name resolver param resolves to a key that exists at call time.

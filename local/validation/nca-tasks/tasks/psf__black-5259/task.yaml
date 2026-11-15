@@ -1,0 +1,15 @@
+base_commit: 364941e1c29909e04f933bb0e87f365fc1d4c557
+created_at: '2026-07-25T03:32:21Z'
+datasets:
+- nca/nca-bench
+environment_setup_commit: 364941e1c29909e04f933bb0e87f365fc1d4c557
+eval_type: pass_and_fail
+image: swebench/sweb.eval.x86_64.psf_1776_black-5259:latest
+instance_id: psf__black-5259
+issue_numbers:
+- '260'
+log_parser: parse_log_pytest
+pull_number: 5259
+repo: psf/black
+split: test
+version: spec-5f4a7827

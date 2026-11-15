@@ -1,0 +1,65 @@
+# Per-repo execution environment for validate_tasks.py.
+#
+# Every task gets its own Docker image: python:<python>-slim (linux/amd64) + the repo
+# fetched at the task's base_commit into /testbed + the `install` commands below.
+#
+# Fields
+#   python        Python version of the base image
+#   apt           extra Debian packages (git, patch, build-essential are always installed)
+#   install       shell commands run in /testbed at build time; placeholders:
+#                   {exclude_newer}  date of the base commit (computed at build time), used with
+#                                    uv --exclude-newer so dependencies resolve as they did then
+#   test_cmd      pytest command; the test files from the test patch are appended.
+#                 Keep `-rA --color=no`: the SWE-bench log parser reads the short summary
+#                 (plugins that replace it, like pytest-pretty, must be disabled with -p no:<name>).
+#                 --continue-on-collection-errors: one test file that fails to import must not
+#                 stop the other files (their tests would wrongly end up in FAIL_TO_PASS).
+#   default_tests test files to run when the test patch only changes data/fixtures
+#   env           extra ENV for the image
+#
+# Repos with a uv.lock install the exact locked dependencies (uv export --frozen);
+# the others use uv pip with --exclude-newer.
+# To add a repo: copy a block, adapt it from the repo's CI / tox.ini, try it on 1-2 tasks.
+
+psf/black:
+  python: "3.12"
+  install:
+    - uv pip install --system --exclude-newer {exclude_newer} -e ".[d]" "pytest>=7.4.3" "pytest-xdist>=3.0.2"
+  test_cmd: pytest -rA --color=no -p no:cacheprovider --continue-on-collection-errors --run-optional no_jupyter
+  default_tests: [tests/test_format.py]
+
+scrapy/scrapy:
+  python: "3.12"
+  install:
+    - >-
+      uv pip install --system --exclude-newer {exclude_newer} -e .
+      attrs coverage pexpect psutil pyftpdlib pygments pytest pytest-rerunfailures
+      pytest-timeout pytest-xdist sybil pytest-twisted Pillow "Twisted[http2]" brotli zstandard
+  test_cmd: pytest -rA --color=no -p no:cacheprovider --continue-on-collection-errors
+
+celery/celery:
+  python: "3.12"
+  apt: [libcurl4-openssl-dev, libssl-dev, libmemcached-dev, zlib1g-dev]
+  install:
+    - uv pip install --system --exclude-newer {exclude_newer} -e . -r requirements/test.txt -r requirements/test-ci-default.txt
+  test_cmd: pytest -rA --color=no -p no:cacheprovider --continue-on-collection-errors
+  env:
+    BOTO_CONFIG: /dev/null
+    PYTHONIOENCODING: UTF-8
+
+PrefectHQ/fastmcp:
+  python: "3.12"
+  install:
+    - uv export --frozen --no-hashes --no-emit-project -q -o /tmp/requirements.txt
+    - uv pip install --system -r /tmp/requirements.txt
+    - uv pip install --system --no-deps -e .
+  test_cmd: pytest -rA --color=no -p no:cacheprovider --continue-on-collection-errors
+
+modelcontextprotocol/python-sdk:
+  python: "3.12"
+  install:
+    - uv export --frozen --no-hashes --no-emit-project --all-extras -q -o /tmp/requirements.txt
+    - uv pip install --system -r /tmp/requirements.txt
+    - uv pip install --system --no-deps -e .
+  # -p no:pretty: pytest-pretty replaces the -rA short summary that the log parser reads
+  test_cmd: pytest -rA --color=no -p no:cacheprovider --continue-on-collection-errors -p no:pretty

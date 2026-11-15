@@ -1,0 +1,326 @@
+#!/bin/bash
+set -uxo pipefail
+cd /testbed
+git config --global --add safe.directory /testbed
+git status
+git -c core.fileMode=false diff c8fcfc8d7faad87f90649ab1ebed90a4c8c1abe7
+git checkout c8fcfc8d7faad87f90649ab1ebed90a4c8c1abe7 -- tests/docs_src/test_troubleshooting.py tests/server/mcpserver/tools/test_base.py
+git apply -v - <<'EOF_NCA_TEST_PATCH_7f3a'
+diff --git a/tests/docs_src/test_header_parameters.py b/tests/docs_src/test_header_parameters.py
+new file mode 100644
+index 0000000000..5466dba9d6
+--- /dev/null
++++ b/tests/docs_src/test_header_parameters.py
+@@ -0,0 +1,142 @@
++"""`docs/advanced/header-parameters.md`: every claim the page makes, proved against the real SDK."""
++
++from collections.abc import AsyncIterator
++from contextlib import asynccontextmanager
++from typing import Annotated, Literal
++
++import httpx2
++import pytest
++from mcp_types import HEADER_MISMATCH, ListToolsResult, PaginatedRequestParams
++from pydantic import Field, WithJsonSchema
++from starlette.applications import Starlette
++
++from docs_src.header_parameters import tutorial001, tutorial002
++from mcp import Client
++from mcp.client.streamable_http import streamable_http_client
++from mcp.server import MCPServer, Server, ServerRequestContext
++from mcp.server.mcpserver.exceptions import InvalidSignature
++
++# See test_index.py for why this is a per-module mark and not a conftest hook.
++pytestmark = [pytest.mark.anyio, pytest.mark.filterwarnings("error::mcp.MCPDeprecationWarning")]
++
++URL = "http://localhost:8000/mcp"
++ARGUMENTS = {"title": "Dune", "region": "eu"}
++
++
++@asynccontextmanager
++async def check_stock_over_http(
++    app: Starlette, mode: Literal["auto", "legacy"] = "auto"
++) -> AsyncIterator[tuple[httpx2.AsyncClient, httpx2.Request]]:
++    """List the tools and call `check_stock` over in-process HTTP; yield the HTTP client and the call's request."""
++    requests: list[httpx2.Request] = []
++
++    async def record(request: httpx2.Request) -> None:
++        requests.append(request)
++
++    async with (
++        app.router.lifespan_context(app),
++        httpx2.ASGITransport(app) as transport,
++        httpx2.AsyncClient(transport=transport, event_hooks={"request": [record]}) as http,
++        Client(streamable_http_client(URL, http_client=http), mode=mode) as client,
++    ):
++        await client.list_tools()
++        result = await client.call_tool("check_stock", ARGUMENTS)
++        assert not result.is_error
++        yield http, next(request for request in requests if b'"tools/call"' in request.content)
++
++
++@pytest.mark.parametrize(
++    "app", [tutorial001.mcp.streamable_http_app(), tutorial002.app], ids=["tutorial001", "tutorial002"]
++)
++async def test_a_2026_http_client_sends_the_marked_argument_as_a_header_as_well(app: Starlette) -> None:
++    """Both tutorials: `region` travels as `Mcp-Param-Region` and stays in the body; `title` is body only."""
++    async with check_stock_over_http(app) as (_, call):
++        assert {k: v for k, v in call.headers.items() if k.startswith("mcp-param-")} == {"mcp-param-region": "eu"}
++        assert b'"region":"eu"' in call.content
++
++
++async def test_a_call_whose_header_and_body_disagree_is_rejected() -> None:
++    """tutorial001: the client's own request, replayed with a different `Mcp-Param-Region`, is a 400."""
++    async with check_stock_over_http(tutorial001.mcp.streamable_http_app()) as (http, call):
++        tampered = await http.post(URL, content=call.content, headers={**call.headers, "mcp-param-region": "us"})
++    assert tampered.status_code == 400
++    assert tampered.json()["error"]["code"] == HEADER_MISMATCH
++
++
++async def test_a_legacy_http_connection_ignores_the_annotation() -> None:
++    """tutorial001: before 2026-07-28 the same call succeeds and carries no `Mcp-Param-*` header."""
++    async with check_stock_over_http(tutorial001.mcp.streamable_http_app(), mode="legacy") as (_, call):
++        assert not [name for name in call.headers if name.startswith("mcp-param-")]
++
++
++async def test_a_connection_that_is_not_http_ignores_the_annotation() -> None:
++    """tutorial001: in memory there are no headers to send, and the call succeeds all the same."""
++    async with Client(tutorial001.mcp) as client:
++        assert client.protocol_version == "2026-07-28"
++        result = await client.call_tool("check_stock", ARGUMENTS)
++    assert result.structured_content == {"result": "Dune: 3 copies in eu."}
++
++
++async def test_int_and_bool_arguments_can_be_marked() -> None:
++    """`str` is tutorial001; `int` and `bool` register too, and a 2026-07-28 client keeps the tool."""
++    mcp = MCPServer("Bookshop")
++
++    @mcp.tool()
++    def reserve(
++        copies: Annotated[int, Field(json_schema_extra={"x-mcp-header": "Copies"})],
++        gift: Annotated[bool, Field(json_schema_extra={"x-mcp-header": "Gift"})],
++    ) -> None:
++        """Never called: registering and listing it is the claim."""
++
++    async with Client(mcp) as client:
++        assert [tool.name for tool in (await client.list_tools()).tools] == ["reserve"]
++
++
++async def test_any_other_type_is_refused_when_the_tool_is_registered() -> None:
++    """A marked `list[str]` raises `InvalidSignature` from the decorator, before any client connects."""
++    mcp = MCPServer("Bookshop")
++    with pytest.raises(InvalidSignature):
++
++        @mcp.tool()
++        def check_stock(regions: Annotated[list[str], Field(json_schema_extra={"x-mcp-header": "Regions"})]) -> None:
++            """Never called: the decoration itself is what raises."""
++
++    assert await mcp.list_tools() == []
++
++
++async def test_a_plain_optional_argument_is_refused_and_the_spelled_out_schema_registers() -> None:
++    """`str | None` has no single `type`, so it is refused; the page's `WithJsonSchema` spelling is kept."""
++    mcp = MCPServer("Bookshop")
++    with pytest.raises(InvalidSignature):
++
++        @mcp.tool()
++        def refused(region: Annotated[str | None, Field(json_schema_extra={"x-mcp-header": "Region"})] = None) -> None:
++            """Never called: the decoration itself is what raises."""
++
++    @mcp.tool()
++    def check_stock(
++        region: Annotated[str | None, WithJsonSchema({"type": "string", "x-mcp-header": "Region"})] = None,
++    ) -> str:
++        """Count the copies of a book in one region's warehouses."""
++        return f"3 copies in {region}."
++
++    async with Client(mcp) as client:
++        assert [tool.name for tool in (await client.list_tools()).tools] == ["check_stock"]
++        result = await client.call_tool("check_stock", {})
++    assert result.structured_content == {"result": "3 copies in None."}
++
++
++async def test_the_low_level_server_serves_an_invalid_annotation_and_a_2026_client_leaves_the_tool_out() -> None:
++    """tutorial002's tool with `region` turned into an array: a legacy client is shown it, a 2026-07-28 one is not."""
++    properties = {"region": {"type": "array", "x-mcp-header": "Region"}}
++    invalid = tutorial002.CHECK_STOCK.model_copy(update={"input_schema": {"type": "object", "properties": properties}})
++
++    async def list_tools(ctx: ServerRequestContext, params: PaginatedRequestParams | None) -> ListToolsResult:
++        return ListToolsResult(tools=[invalid])
++
++    server = Server("Bookshop", on_list_tools=list_tools)
++    async with Client(server, mode="legacy") as legacy:
++        assert [tool.name for tool in (await legacy.list_tools()).tools] == ["check_stock"]
++    async with Client(server) as modern:
++        assert modern.protocol_version == "2026-07-28"
++        assert (await modern.list_tools()).tools == []
+diff --git a/tests/docs_src/test_troubleshooting.py b/tests/docs_src/test_troubleshooting.py
+index 1e1b5e15b8..e39a78050e 100644
+--- a/tests/docs_src/test_troubleshooting.py
++++ b/tests/docs_src/test_troubleshooting.py
+@@ -1,10 +1,11 @@
+ """`docs/troubleshooting.md`: every error string the page names, reproduced against the real SDK."""
+ 
+ import logging
+-from typing import Any
++from typing import Annotated, Any
+ 
+ import httpx2
+ import pytest
++from inline_snapshot import snapshot
+ from mcp_types import (
+     INVALID_PARAMS,
+     INVALID_REQUEST,
+@@ -14,6 +15,7 @@
+     ErrorData,
+     TextContent,
+ )
++from pydantic import Field
+ 
+ from docs_src.troubleshooting import (
+     tutorial001,
+@@ -30,6 +32,7 @@
+ from mcp.client.streamable_http import streamable_http_client
+ from mcp.server import MCPServer
+ from mcp.server.mcpserver import RequestStateSecurity
++from mcp.server.mcpserver.exceptions import InvalidSignature
+ 
+ # See test_index.py for why this is a per-module mark and not a conftest hook.
+ pytestmark = [pytest.mark.anyio, pytest.mark.filterwarnings("error::mcp.MCPDeprecationWarning")]
+@@ -124,6 +127,22 @@ def forecast(city: str) -> None:
+             """Today's forecast for one city. Never called: the decoration itself is what raises."""
+ 
+ 
++async def test_an_invalid_x_mcp_header_annotation_raises_at_import_time() -> None:
++    """A marked `str | None` is refused by the decorator itself, with the heading's text and the reason after it."""
++    mcp = MCPServer("Weather")
++    with pytest.raises(InvalidSignature) as excinfo:
++
++        @mcp.tool()
++        def forecast(city: Annotated[str | None, Field(json_schema_extra={"x-mcp-header": "City"})] = None) -> None:
++            """Today's forecast for one city. Never called: the decoration itself is what raises."""
++
++    assert str(excinfo.value) == snapshot(
++        "Tool 'forecast' has an invalid x-mcp-header annotation: "
++        "property 'city': x-mcp-header is only permitted on integer/string/boolean properties "
++        "(the type keyword is NoneType, not a string)"
++    )
++
++
+ async def test_a_duplicate_tool_name_keeps_the_first_and_drops_the_second() -> None:
+     """tutorial002: `tools/list` reports one `forecast`, and it is the first registration that won."""
+     async with Client(tutorial002.mcp) as client:
+diff --git a/tests/server/mcpserver/tools/test_base.py b/tests/server/mcpserver/tools/test_base.py
+index 0cb583028d..5ed47f51d5 100644
+--- a/tests/server/mcpserver/tools/test_base.py
++++ b/tests/server/mcpserver/tools/test_base.py
+@@ -1,8 +1,14 @@
++from collections.abc import Callable
++from typing import Annotated
++
+ import mcp_types as types
+ import pytest
++from inline_snapshot import snapshot
++from pydantic import Field
+ 
+ from mcp import Client
+ from mcp.server.mcpserver import Context, MCPServer
++from mcp.server.mcpserver.exceptions import InvalidSignature
+ from mcp.server.mcpserver.tools.base import Tool
+ from mcp.shared.exceptions import MCPError
+ 
+@@ -55,3 +61,89 @@ async def boom() -> str:
+ 
+     assert isinstance(result, types.CallToolResult)
+     assert result.is_error is True
++
++
++def array_header(tags: Annotated[list[str], Field(json_schema_extra={"x-mcp-header": "Tags"})]) -> str:
++    raise NotImplementedError
++
++
++def number_header(ratio: Annotated[float, Field(json_schema_extra={"x-mcp-header": "Ratio"})]) -> str:
++    raise NotImplementedError
++
++
++def optional_header(region: Annotated[str | None, Field(json_schema_extra={"x-mcp-header": "Region"})] = None) -> str:
++    raise NotImplementedError
++
++
++def non_token_header(region: Annotated[str, Field(json_schema_extra={"x-mcp-header": "Region Name"})]) -> str:
++    raise NotImplementedError
++
++
++@pytest.mark.anyio
++@pytest.mark.parametrize(
++    ("fn", "message"),
++    [
++        pytest.param(
++            array_header,
++            snapshot(
++                "Tool 'array_header' has an invalid x-mcp-header annotation: "
++                "property 'tags': x-mcp-header is only permitted on integer/string/boolean properties (got 'array')"
++            ),
++            id="array",
++        ),
++        pytest.param(
++            number_header,
++            snapshot(
++                "Tool 'number_header' has an invalid x-mcp-header annotation: "
++                "property 'ratio': x-mcp-header is only permitted on integer/string/boolean properties (got 'number')"
++            ),
++            id="number",
++        ),
++        pytest.param(
++            optional_header,
++            snapshot(
++                "Tool 'optional_header' has an invalid x-mcp-header annotation: "
++                "property 'region': x-mcp-header is only permitted on integer/string/boolean properties "
++                "(the type keyword is NoneType, not a string)"
++            ),
++            id="optional",
++        ),
++        pytest.param(
++            non_token_header,
++            snapshot(
++                "Tool 'non_token_header' has an invalid x-mcp-header annotation: "
++                "property 'region': x-mcp-header 'Region Name' is not an RFC 9110 token"
++            ),
++            id="non-token-name",
++        ),
++    ],
++)
++async def test_tool_with_an_invalid_x_mcp_header_annotation_is_rejected_at_registration(
++    fn: Callable[..., str], message: str
++):
++    """SDK-defined: the spec has 2026-07-28 clients exclude such a tool, so registration
++    refuses it with an error naming the tool and the reason, and nothing is registered."""
++    mcp = MCPServer(name="srv")
++
++    with pytest.raises(InvalidSignature) as exc_info:
++        mcp.add_tool(fn)
++
++    assert str(exc_info.value) == message
++    assert await mcp.list_tools() == []
++
++
++@pytest.mark.anyio
++async def test_tool_with_valid_x_mcp_header_annotations_is_registered():
++    """SDK-defined: string, integer and boolean parameters may carry `x-mcp-header`,
++    so a tool that annotates one of each registers."""
++    mcp = MCPServer(name="srv")
++
++    @mcp.tool()
++    def fetch(
++        region: Annotated[str, Field(json_schema_extra={"x-mcp-header": "Region"})],
++        shard: Annotated[int, Field(json_schema_extra={"x-mcp-header": "Shard"})],
++        dry_run: Annotated[bool, Field(json_schema_extra={"x-mcp-header": "Dry-Run"})],
++    ) -> str:
++        raise NotImplementedError
++
++    assert [tool.name for tool in await mcp.list_tools()] == ["fetch"]
+EOF_NCA_TEST_PATCH_7f3a
+: '>>>>> Start Test Output'
+pytest -rA --color=no -p no:cacheprovider --continue-on-collection-errors -p no:pretty tests/docs_src/test_header_parameters.py tests/docs_src/test_troubleshooting.py tests/server/mcpserver/tools/test_base.py
+: '>>>>> End Test Output'
+git checkout c8fcfc8d7faad87f90649ab1ebed90a4c8c1abe7 -- tests/docs_src/test_troubleshooting.py tests/server/mcpserver/tools/test_base.py
