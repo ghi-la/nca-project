@@ -12,4 +12,4 @@ log_parser: parse_log_pytest
 pull_number: 10668
 repo: celery/celery
 split: test
-version: spec-284f8af1
+version: spec-1e10008d

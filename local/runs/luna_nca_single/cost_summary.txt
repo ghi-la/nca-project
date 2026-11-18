@@ -1,0 +1,3 @@
+instance                                        cost $  calls  exit_status
+scrapy__scrapy-8193                             0.0028      9  Submitted
+TOTAL 1 instances: $0.0028  mean $0.0028/instance

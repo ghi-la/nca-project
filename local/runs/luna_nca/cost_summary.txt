@@ -1,0 +1,27 @@
+instance                                        cost $  calls  exit_status
+PrefectHQ__fastmcp-6077                         0.0037     11  Submitted
+PrefectHQ__fastmcp-6100                         0.0014      6  Submitted
+PrefectHQ__fastmcp-6147                         0.0038     14  Submitted
+PrefectHQ__fastmcp-6180                         0.0032     12  Submitted
+PrefectHQ__fastmcp-6187                         0.0039     16  Submitted
+celery__celery-10598                            0.0033     10  Submitted
+celery__celery-10605                            0.0026     10  Submitted
+celery__celery-10606                            0.0020      9  Submitted
+celery__celery-10668                            0.0024     11  Submitted
+celery__celery-10714                            0.0017      7  Submitted
+modelcontextprotocol__python-sdk-3485           0.0047     13  Submitted
+modelcontextprotocol__python-sdk-3600           0.0045     16  Submitted
+modelcontextprotocol__python-sdk-3620           0.0040     15  Submitted
+modelcontextprotocol__python-sdk-3622           0.0028      9  Submitted
+psf__black-5259                                 0.0040     15  Submitted
+psf__black-5297                                 0.0027     13  Submitted
+psf__black-5304                                 0.0033     13  Submitted
+psf__black-5386                                 0.0012      7  Submitted
+psf__black-5408                                 0.0028      8  Submitted
+psf__black-5411                                 0.0016      9  Submitted
+psf__black-5416                                 0.0046     16  Submitted
+scrapy__scrapy-8189                             0.0020      9  Submitted
+scrapy__scrapy-8193                             0.0023      9  Submitted
+scrapy__scrapy-8204                             0.0031      9  Submitted
+scrapy__scrapy-8224                             0.0023     10  Submitted
+TOTAL 25 instances: $0.0741  mean $0.0030/instance

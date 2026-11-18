@@ -1,0 +1,7 @@
+{
+  "scrapy__scrapy-8193": {
+    "model_name_or_path": "openai/gpt-6-luna",
+    "instance_id": "scrapy__scrapy-8193",
+    "model_patch": "diff --git a/scrapy/pipelines/media.py b/scrapy/pipelines/media.py\nindex 41b2e17..fa0413e 100644\n--- a/scrapy/pipelines/media.py\n+++ b/scrapy/pipelines/media.py\n@@ -110,6 +110,7 @@ class MediaPipeline(ABC):\n         self.allow_redirects: bool = settings.getbool(\n             resolve(\"MEDIA_ALLOW_REDIRECTS\"), False\n         )\n+        self.cache_results: bool = settings.getbool(resolve(\"MEDIA_CACHE\"), True)\n         self._handle_statuses(self.allow_redirects)\n \n     def _handle_statuses(self, allow_redirects: bool) -> None:\n@@ -275,7 +276,8 @@ class MediaPipeline(ABC):\n                 result.value.__context__ = None\n \n         info.downloading.remove(fp)\n-        info.downloaded[fp] = result  # cache result\n+        if self.cache_results:\n+            info.downloaded[fp] = result  # cache result\n         for wad in info.waiting.pop(fp):\n             if isinstance(result, Failure):\n                 wad.errback(result)\ndiff --git a/scrapy/settings/default_settings.py b/scrapy/settings/default_settings.py\nindex 0c0216e..d87ad65 100644\n--- a/scrapy/settings/default_settings.py\n+++ b/scrapy/settings/default_settings.py\n@@ -442,6 +442,8 @@ HTTPPROXY_AUTH_ENCODING = \"latin-1\"\n \n HTTPX_HTTP2_ENABLED = False\n \n+MEDIA_CACHE = True\n+\n IMAGES_STORE = None\n IMAGES_STORE_GCS_ACL = \"\"\n IMAGES_STORE_S3_ACL = \"private\"\n"
+  }
+}

@@ -1,0 +1,78 @@
+2026-11-18 11:46:58,858 - minisweagent - INFO - Loading dataset /Users/ghila/USI/NCA/nca-project/local/validation/nca-tasks/dataset, split test...
+2026-11-18 11:46:58,880 - minisweagent - INFO - Running on 25 instances...
+2026-11-18 11:46:58,881 - minisweagent - INFO - Building agent config from specs: ['swebench.yaml', 'model.model_kwargs.reasoning_effort=low', 'agent.step_limit=75', 'agent.cost_limit=0.30']
+2026-11-18 11:47:00,024 - minisweagent.environment - DEBUG - Starting container with command: docker run -d --name minisweagent-9c059925 -w /testbed --rm swebench/sweb.eval.x86_64.prefecthq_1776_fastmcp-6100:latest sleep 2h
+2026-11-18 11:47:00,024 - minisweagent.environment - DEBUG - Starting container with command: docker run -d --name minisweagent-d4640185 -w /testbed --rm swebench/sweb.eval.x86_64.prefecthq_1776_fastmcp-6077:latest sleep 2h
+2026-11-18 11:47:00,143 - minisweagent.environment - INFO - Started container minisweagent-9c059925 with ID 01ce4cbdf23cff60e25a9906666622e77e22e94e7fc4497d96f399f8945dafae
+2026-11-18 11:47:00,155 - minisweagent.environment - INFO - Started container minisweagent-d4640185 with ID 9bba621a0fccf65e85cf6a25f674ac725c61e6d56653aff2339a4777f0b5b2ab
+2026-11-18 11:47:22,000 - minisweagent - INFO - Saved trajectory to '/Users/ghila/USI/NCA/nca-project/local/runs/luna_nca/PrefectHQ__fastmcp-6100/PrefectHQ__fastmcp-6100.traj.json'
+2026-11-18 11:47:22,019 - minisweagent.environment - DEBUG - Starting container with command: docker run -d --name minisweagent-0b5c7f2f -w /testbed --rm swebench/sweb.eval.x86_64.prefecthq_1776_fastmcp-6147:latest sleep 2h
+2026-11-18 11:47:22,153 - minisweagent.environment - INFO - Started container minisweagent-0b5c7f2f with ID 01faaac89dcda5eba750cd9673db67296637d1ecf6b34218c563d3e70e3424b8
+2026-11-18 11:47:47,578 - minisweagent - INFO - Saved trajectory to '/Users/ghila/USI/NCA/nca-project/local/runs/luna_nca/PrefectHQ__fastmcp-6077/PrefectHQ__fastmcp-6077.traj.json'
+2026-11-18 11:47:47,594 - minisweagent.environment - DEBUG - Starting container with command: docker run -d --name minisweagent-d8878814 -w /testbed --rm swebench/sweb.eval.x86_64.prefecthq_1776_fastmcp-6180:latest sleep 2h
+2026-11-18 11:47:47,698 - minisweagent.environment - INFO - Started container minisweagent-d8878814 with ID 0d9f8f1995ba4c30deef7a400f17c12a250614ac71bcfa6b4ea85382cfd88211
+2026-11-18 11:48:14,342 - minisweagent - INFO - Saved trajectory to '/Users/ghila/USI/NCA/nca-project/local/runs/luna_nca/PrefectHQ__fastmcp-6147/PrefectHQ__fastmcp-6147.traj.json'
+2026-11-18 11:48:14,366 - minisweagent.environment - DEBUG - Starting container with command: docker run -d --name minisweagent-9deaaf33 -w /testbed --rm swebench/sweb.eval.x86_64.prefecthq_1776_fastmcp-6187:latest sleep 2h
+2026-11-18 11:48:14,480 - minisweagent.environment - INFO - Started container minisweagent-9deaaf33 with ID 79e6162e0fbbfb21b27e148e918f19f4508c06d9267c6f6d0a8dbdf1b6377e54
+2026-11-18 11:48:36,912 - minisweagent - INFO - Saved trajectory to '/Users/ghila/USI/NCA/nca-project/local/runs/luna_nca/PrefectHQ__fastmcp-6180/PrefectHQ__fastmcp-6180.traj.json'
+2026-11-18 11:48:36,920 - minisweagent.environment - DEBUG - Starting container with command: docker run -d --name minisweagent-dd3a5020 -w /testbed --rm swebench/sweb.eval.x86_64.celery_1776_celery-10598:latest sleep 2h
+2026-11-18 11:48:37,025 - minisweagent.environment - INFO - Started container minisweagent-dd3a5020 with ID 1fda46aabbb67767976198c13cb3f157b7eb786e73aff8781edbb5489db75dff
+2026-11-18 11:49:20,424 - minisweagent - INFO - Saved trajectory to '/Users/ghila/USI/NCA/nca-project/local/runs/luna_nca/celery__celery-10598/celery__celery-10598.traj.json'
+2026-11-18 11:49:20,438 - minisweagent.environment - DEBUG - Starting container with command: docker run -d --name minisweagent-097176aa -w /testbed --rm swebench/sweb.eval.x86_64.celery_1776_celery-10605:latest sleep 2h
+2026-11-18 11:49:20,594 - minisweagent.environment - INFO - Started container minisweagent-097176aa with ID 5fc547d402b9bb301fa4cf6376929c951a088cf027f27da1a231b31b12ccd481
+2026-11-18 11:49:25,115 - minisweagent - INFO - Saved trajectory to '/Users/ghila/USI/NCA/nca-project/local/runs/luna_nca/PrefectHQ__fastmcp-6187/PrefectHQ__fastmcp-6187.traj.json'
+2026-11-18 11:49:25,123 - minisweagent.environment - DEBUG - Starting container with command: docker run -d --name minisweagent-aef81009 -w /testbed --rm swebench/sweb.eval.x86_64.celery_1776_celery-10606:latest sleep 2h
+2026-11-18 11:49:25,252 - minisweagent.environment - INFO - Started container minisweagent-aef81009 with ID d51e2bc6d26216aca074d9e5fa424375c0a212ad72d2f28d8d49a3e65cf8cdb8
+2026-11-18 12:00:00,000 - minisweagent - INFO - Saved trajectory to '/Users/ghila/USI/NCA/nca-project/local/runs/luna_nca/celery__celery-10606/celery__celery-10606.traj.json'
+2026-11-18 12:00:00,003 - minisweagent.environment - DEBUG - Starting container with command: docker run -d --name minisweagent-4f28862e -w /testbed --rm swebench/sweb.eval.x86_64.celery_1776_celery-10668:latest sleep 2h
+2026-11-18 12:00:00,121 - minisweagent.environment - INFO - Started container minisweagent-4f28862e with ID bd858edeb1f9af3434bb2fac84b4625ebb0cbb3d9be15c705eb3042c55d3869c
+2026-11-18 12:00:04,976 - minisweagent - INFO - Saved trajectory to '/Users/ghila/USI/NCA/nca-project/local/runs/luna_nca/celery__celery-10605/celery__celery-10605.traj.json'
+2026-11-18 12:00:04,978 - minisweagent.environment - DEBUG - Starting container with command: docker run -d --name minisweagent-ea454482 -w /testbed --rm swebench/sweb.eval.x86_64.celery_1776_celery-10714:latest sleep 2h
+2026-11-18 12:00:05,076 - minisweagent.environment - INFO - Started container minisweagent-ea454482 with ID 65ab99aac67ab7e324cba5216aea729a14dde5446214fc58bfcc7a3343f133cf
+2026-11-18 12:00:32,554 - minisweagent - INFO - Saved trajectory to '/Users/ghila/USI/NCA/nca-project/local/runs/luna_nca/celery__celery-10714/celery__celery-10714.traj.json'
+2026-11-18 12:00:32,560 - minisweagent.environment - DEBUG - Starting container with command: docker run -d --name minisweagent-dead7685 -w /testbed --rm swebench/sweb.eval.x86_64.modelcontextprotocol_1776_python-sdk-3485:latest sleep 2h
+2026-11-18 12:00:32,695 - minisweagent.environment - INFO - Started container minisweagent-dead7685 with ID 7d13c997da2122280324f3278e16b8bde776f6bc62faaa14f0a07221cf19eb88
+2026-11-18 12:00:46,681 - minisweagent - INFO - Saved trajectory to '/Users/ghila/USI/NCA/nca-project/local/runs/luna_nca/celery__celery-10668/celery__celery-10668.traj.json'
+2026-11-18 12:00:46,687 - minisweagent.environment - DEBUG - Starting container with command: docker run -d --name minisweagent-6452f757 -w /testbed --rm swebench/sweb.eval.x86_64.modelcontextprotocol_1776_python-sdk-3600:latest sleep 2h
+2026-11-18 12:00:46,790 - minisweagent.environment - INFO - Started container minisweagent-6452f757 with ID db5b623838b6eeb13e1d2c30a22398ca4bfc6260b5ad7f2089094477c119664a
+2026-11-18 12:01:22,947 - minisweagent - INFO - Saved trajectory to '/Users/ghila/USI/NCA/nca-project/local/runs/luna_nca/modelcontextprotocol__python-sdk-3485/modelcontextprotocol__python-sdk-3485.traj.json'
+2026-11-18 12:01:22,953 - minisweagent.environment - DEBUG - Starting container with command: docker run -d --name minisweagent-1ad243eb -w /testbed --rm swebench/sweb.eval.x86_64.modelcontextprotocol_1776_python-sdk-3620:latest sleep 2h
+2026-11-18 12:01:23,056 - minisweagent.environment - INFO - Started container minisweagent-1ad243eb with ID e544c41a5dde14c51be5c85e46a2a3dfe786474f30c408590a0bf02bf1103501
+2026-11-18 12:01:36,406 - minisweagent - INFO - Saved trajectory to '/Users/ghila/USI/NCA/nca-project/local/runs/luna_nca/modelcontextprotocol__python-sdk-3600/modelcontextprotocol__python-sdk-3600.traj.json'
+2026-11-18 12:01:36,412 - minisweagent.environment - DEBUG - Starting container with command: docker run -d --name minisweagent-b53b6462 -w /testbed --rm swebench/sweb.eval.x86_64.modelcontextprotocol_1776_python-sdk-3622:latest sleep 2h
+2026-11-18 12:01:36,510 - minisweagent.environment - INFO - Started container minisweagent-b53b6462 with ID 2a750bdc81831eb74a9659d95484b6053ef5aa262d481e003cf79a21010c86de
+2026-11-18 12:02:05,698 - minisweagent - INFO - Saved trajectory to '/Users/ghila/USI/NCA/nca-project/local/runs/luna_nca/modelcontextprotocol__python-sdk-3622/modelcontextprotocol__python-sdk-3622.traj.json'
+2026-11-18 12:02:05,706 - minisweagent.environment - DEBUG - Starting container with command: docker run -d --name minisweagent-484218a6 -w /testbed --rm swebench/sweb.eval.x86_64.psf_1776_black-5259:latest sleep 2h
+2026-11-18 12:02:05,830 - minisweagent.environment - INFO - Started container minisweagent-484218a6 with ID 78a40c93431d140fdaea0b33fd2bb6e78c95e2b928725a7fd427b10ee22d7613
+2026-11-18 12:02:14,809 - minisweagent - INFO - Saved trajectory to '/Users/ghila/USI/NCA/nca-project/local/runs/luna_nca/modelcontextprotocol__python-sdk-3620/modelcontextprotocol__python-sdk-3620.traj.json'
+2026-11-18 12:02:14,816 - minisweagent.environment - DEBUG - Starting container with command: docker run -d --name minisweagent-6e217014 -w /testbed --rm swebench/sweb.eval.x86_64.psf_1776_black-5297:latest sleep 2h
+2026-11-18 12:02:14,913 - minisweagent.environment - INFO - Started container minisweagent-6e217014 with ID 0f9dbfd141d5b7822dd97dc422fe0f40d09b1bb05de01574ff7c963780575b36
+2026-11-18 12:02:59,528 - minisweagent - INFO - Saved trajectory to '/Users/ghila/USI/NCA/nca-project/local/runs/luna_nca/psf__black-5297/psf__black-5297.traj.json'
+2026-11-18 12:02:59,537 - minisweagent.environment - DEBUG - Starting container with command: docker run -d --name minisweagent-a294283b -w /testbed --rm swebench/sweb.eval.x86_64.psf_1776_black-5304:latest sleep 2h
+2026-11-18 12:02:59,643 - minisweagent.environment - INFO - Started container minisweagent-a294283b with ID d3f1597c0dbe606ed21ab238cc43d877da395e5162a0351a066c3f4f6e05d148
+2026-11-18 12:03:11,198 - minisweagent - INFO - Saved trajectory to '/Users/ghila/USI/NCA/nca-project/local/runs/luna_nca/psf__black-5259/psf__black-5259.traj.json'
+2026-11-18 12:03:11,206 - minisweagent.environment - DEBUG - Starting container with command: docker run -d --name minisweagent-466e8ff0 -w /testbed --rm swebench/sweb.eval.x86_64.psf_1776_black-5386:latest sleep 2h
+2026-11-18 12:03:11,305 - minisweagent.environment - INFO - Started container minisweagent-466e8ff0 with ID 5d643579497c1f2f390cf02b83677162f8e41594570b55c4bfc2dc58a6cd32fb
+2026-11-18 12:03:31,940 - minisweagent - INFO - Saved trajectory to '/Users/ghila/USI/NCA/nca-project/local/runs/luna_nca/psf__black-5386/psf__black-5386.traj.json'
+2026-11-18 12:03:31,946 - minisweagent.environment - DEBUG - Starting container with command: docker run -d --name minisweagent-b04275f9 -w /testbed --rm swebench/sweb.eval.x86_64.psf_1776_black-5408:latest sleep 2h
+2026-11-18 12:03:32,046 - minisweagent.environment - INFO - Started container minisweagent-b04275f9 with ID a38aec2a2980e70b1793954cef9fe860bb809b431414d2792a3233a05f8e293b
+2026-11-18 12:03:52,204 - minisweagent - INFO - Saved trajectory to '/Users/ghila/USI/NCA/nca-project/local/runs/luna_nca/psf__black-5304/psf__black-5304.traj.json'
+2026-11-18 12:03:52,211 - minisweagent.environment - DEBUG - Starting container with command: docker run -d --name minisweagent-0b01d700 -w /testbed --rm swebench/sweb.eval.x86_64.psf_1776_black-5411:latest sleep 2h
+2026-11-18 12:03:52,322 - minisweagent.environment - INFO - Started container minisweagent-0b01d700 with ID 7531c1fec120800319156042d16a6affd4893a3e17e36d22d57edeb50f57a258
+2026-11-18 12:04:05,856 - minisweagent - INFO - Saved trajectory to '/Users/ghila/USI/NCA/nca-project/local/runs/luna_nca/psf__black-5408/psf__black-5408.traj.json'
+2026-11-18 12:04:05,863 - minisweagent.environment - DEBUG - Starting container with command: docker run -d --name minisweagent-e0f91b98 -w /testbed --rm swebench/sweb.eval.x86_64.psf_1776_black-5416:latest sleep 2h
+2026-11-18 12:04:05,964 - minisweagent.environment - INFO - Started container minisweagent-e0f91b98 with ID cc767d753736c752116a7f72926badba4340d34798c3a970bc807c95aa0416d1
+2026-11-18 12:04:20,923 - minisweagent - INFO - Saved trajectory to '/Users/ghila/USI/NCA/nca-project/local/runs/luna_nca/psf__black-5411/psf__black-5411.traj.json'
+2026-11-18 12:04:20,931 - minisweagent.environment - DEBUG - Starting container with command: docker run -d --name minisweagent-5ce2f580 -w /testbed --rm swebench/sweb.eval.x86_64.scrapy_1776_scrapy-8189:latest sleep 2h
+2026-11-18 12:04:21,038 - minisweagent.environment - INFO - Started container minisweagent-5ce2f580 with ID 18766b4fc1d5e27862fb8893f2e850ba1602c6e061fca56f98ce05fbd034292c
+2026-11-18 12:05:03,007 - minisweagent - INFO - Saved trajectory to '/Users/ghila/USI/NCA/nca-project/local/runs/luna_nca/scrapy__scrapy-8189/scrapy__scrapy-8189.traj.json'
+2026-11-18 12:05:03,015 - minisweagent.environment - DEBUG - Starting container with command: docker run -d --name minisweagent-69452119 -w /testbed --rm swebench/sweb.eval.x86_64.scrapy_1776_scrapy-8193:latest sleep 2h
+2026-11-18 12:05:03,118 - minisweagent.environment - INFO - Started container minisweagent-69452119 with ID 181e59ac7ced26a2656ab76f74b73a95ef0ad90b32dced5f1a9c3ff6ac33e8cd
+2026-11-18 12:05:03,331 - minisweagent - INFO - Saved trajectory to '/Users/ghila/USI/NCA/nca-project/local/runs/luna_nca/psf__black-5416/psf__black-5416.traj.json'
+2026-11-18 12:05:03,338 - minisweagent.environment - DEBUG - Starting container with command: docker run -d --name minisweagent-9945ebc9 -w /testbed --rm swebench/sweb.eval.x86_64.scrapy_1776_scrapy-8204:latest sleep 2h
+2026-11-18 12:05:03,440 - minisweagent.environment - INFO - Started container minisweagent-9945ebc9 with ID ba6bee816da38f676905d2fa98c9ef4dde1dfa03f53b32ecf4a2f0898b6d3a0f
+2026-11-18 12:05:34,309 - minisweagent - INFO - Saved trajectory to '/Users/ghila/USI/NCA/nca-project/local/runs/luna_nca/scrapy__scrapy-8204/scrapy__scrapy-8204.traj.json'
+2026-11-18 12:05:34,316 - minisweagent.environment - DEBUG - Starting container with command: docker run -d --name minisweagent-bd01299d -w /testbed --rm swebench/sweb.eval.x86_64.scrapy_1776_scrapy-8224:latest sleep 2h
+2026-11-18 12:05:34,435 - minisweagent.environment - INFO - Started container minisweagent-bd01299d with ID 8cbc527615d2ae0943959c5cc7e54bcb50f44bbbb063a91ec8d7fb22ef0c4ed5
+2026-11-18 12:05:35,060 - minisweagent - INFO - Saved trajectory to '/Users/ghila/USI/NCA/nca-project/local/runs/luna_nca/scrapy__scrapy-8193/scrapy__scrapy-8193.traj.json'
+2026-11-18 12:06:07,224 - minisweagent - INFO - Saved trajectory to '/Users/ghila/USI/NCA/nca-project/local/runs/luna_nca/scrapy__scrapy-8224/scrapy__scrapy-8224.traj.json'

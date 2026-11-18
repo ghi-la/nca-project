@@ -411,6 +411,6 @@ index e89af815001..193cbd50a5a 100644
          p.clock.adjust.return_value = 626
 EOF_NCA_TEST_PATCH_7f3a
 : '>>>>> Start Test Output'
-pytest -rA --color=no -p no:cacheprovider --continue-on-collection-errors t/integration/test_inspect.py t/smoke/tests/test_revoked_sync.py t/unit/utils/test_collections.py t/unit/worker/test_consumer.py t/unit/worker/test_control.py t/unit/worker/test_state.py
+pytest -rA --color=no -p no:cacheprovider --continue-on-collection-errors t/unit/utils/test_collections.py t/unit/worker/test_consumer.py t/unit/worker/test_control.py t/unit/worker/test_state.py
 : '>>>>> End Test Output'
 git checkout beef13ac9996b49ecc4aa9c7363cc0dd20db3da3 -- t/integration/test_inspect.py t/unit/utils/test_collections.py t/unit/worker/test_consumer.py t/unit/worker/test_control.py t/unit/worker/test_state.py

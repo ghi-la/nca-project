@@ -1,0 +1,26 @@
+instance_id,spec_score,tests_score,notes
+PrefectHQ__fastmcp-6077,0,2,Clear request; tests also enforce hash/config-based identity and legacy compatibility the issue doesn't mention.
+PrefectHQ__fastmcp-6100,0,2,"Clear bug and expected result; tests require the new reserved __ prefix and name rejection, not the suggested hash check."
+PrefectHQ__fastmcp-6147,1,1,"Clear goal (free the memory), several valid ways to do it; tests check the lifetime/GC cases described."
+PrefectHQ__fastmcp-6180,0,2,Detailed $ref cases and expected behaviour; tests import a name added by the patch and not mentioned in the issue.
+PrefectHQ__fastmcp-6187,1,1,Issue says: make the template readable or don't list it; tests check consistent handling of non-identifier names.
+celery__celery-10598,1,2,Collision and silent behaviour well described; tests import a new API/registration rule the issue doesn't specify.
+celery__celery-10605,0,1,Specific repro and backend; tests check stamps are persisted in the database backend.
+celery__celery-10606,0,1,Problem and expected result (store children) are explicit; tests cover migration and read/write.
+celery__celery-10668,1,2,Clear symptom but relies on older reports; tests pin merge/monotonic timestamp details not stated here.
+celery__celery-10714,0,1,"Backends, 404 errors and idempotent behaviour all specified; tests fit both backends."
+modelcontextprotocol__python-sdk-3485,1,2,SEP and scope are given; tests import new primitives/names not all specified in the issue.
+modelcontextprotocol__python-sdk-3600,1,2,"Need and the three flows are clear, but the API is left open; tests fix the argument name and public shape."
+modelcontextprotocol__python-sdk-3620,0,2,Server-side requirement and validation cases described; tests depend on a new declaration API not named in the issue.
+modelcontextprotocol__python-sdk-3622,0,2,CIMD case and expected result are precise; one FAIL_TO_PASS test isn't enough to check the public-client flow.
+psf__black-5259,1,2,"Understandable style request, but phrased as a preference; tests go well beyond list concatenation."
+psf__black-5297,0,1,Specific repro and expected result; fixture targets the attribute chain from the issue.
+psf__black-5304,0,1,Explicit example and desired output; test checks the redundant parentheses are removed.
+psf__black-5386,0,1,"Crash, condition and expected fallback defined; tests cover no common root and formatting."
+psf__black-5408,1,1,"Open between a status flag and a count, but the wanted outputs are clear; tests check CLI and GitHub output."
+psf__black-5411,0,1,"Reproducible environment, error and expected behaviour; tests cover writing without stdout.buffer."
+psf__black-5416,0,1,Precise before/after example; formatting tests check exactly that.
+scrapy__scrapy-8189,2,2,"Very short request, no API/compatibility criteria; tests import a new name not given in the issue."
+scrapy__scrapy-8193,1,1,"Disable/limit the cache is open to interpretation; MEDIA_CACHE_SIZE=0 satisfies it, tests also cover limits and per-pipeline settings."
+scrapy__scrapy-8204,1,1,"Goal (propagate the exit code) is clear, the mechanism isn't; tests cover error close and custom reasons."
+scrapy__scrapy-8224,1,1,"Symptom and retry/redirect scenario described; tests cover duplicates, retries and the legacy scheduler."

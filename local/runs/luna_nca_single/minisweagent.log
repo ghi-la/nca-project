@@ -1,0 +1,7 @@
+2026-11-18 11:40:47,779 - minisweagent - INFO - Loading dataset /Users/ghila/USI/NCA/nca-project/local/validation/nca-tasks/dataset, split test...
+2026-11-18 11:40:47,807 - minisweagent - INFO - Instance filter: 25 -> 1 instances
+2026-11-18 11:40:47,807 - minisweagent - INFO - Running on 1 instances...
+2026-11-18 11:40:47,808 - minisweagent - INFO - Building agent config from specs: ['swebench.yaml', 'model.model_kwargs.reasoning_effort=low', 'agent.step_limit=75', 'agent.cost_limit=0.30']
+2026-11-18 11:40:48,962 - minisweagent.environment - DEBUG - Starting container with command: docker run -d --name minisweagent-358b694e -w /testbed --rm swebench/sweb.eval.x86_64.scrapy_1776_scrapy-8193:latest sleep 2h
+2026-11-18 11:40:49,086 - minisweagent.environment - INFO - Started container minisweagent-358b694e with ID a408769b87d8217324ca7da30d61f3263900046f429f077b5b05bb3af2e44e81
+2026-11-18 11:41:27,016 - minisweagent - INFO - Saved trajectory to '/Users/ghila/USI/NCA/nca-project/local/runs/luna_nca_single/scrapy__scrapy-8193/scrapy__scrapy-8193.traj.json'
