@@ -1,0 +1,41 @@
+instance_id,repo,n_src_files,difficulty,in_pilot
+django__django-13195,django/django,3,15 min - 1 hour,1
+pytest-dev__pytest-5840,pytest-dev/pytest,2,15 min - 1 hour,1
+django__django-16263,django/django,4,1-4 hours,1
+sphinx-doc__sphinx-9461,sphinx-doc/sphinx,3,1-4 hours,1
+django__django-11532,django/django,5,15 min - 1 hour,1
+django__django-14376,django/django,2,<15 min fix,1
+matplotlib__matplotlib-24870,matplotlib/matplotlib,2,15 min - 1 hour,1
+django__django-13512,django/django,2,<15 min fix,1
+django__django-13212,django/django,2,1-4 hours,1
+pytest-dev__pytest-8399,pytest-dev/pytest,2,15 min - 1 hour,1
+sympy__sympy-17318,sympy/sympy,2,15 min - 1 hour,0
+mwaskom__seaborn-3187,mwaskom/seaborn,2,15 min - 1 hour,0
+django__django-11138,django/django,4,1-4 hours,0
+django__django-14170,django/django,2,15 min - 1 hour,0
+django__django-16631,django/django,2,1-4 hours,0
+django__django-15561,django/django,2,15 min - 1 hour,0
+django__django-16256,django/django,2,15 min - 1 hour,0
+pylint-dev__pylint-6528,pylint-dev/pylint,2,15 min - 1 hour,0
+pydata__xarray-3095,pydata/xarray,2,15 min - 1 hour,0
+pylint-dev__pylint-4604,pylint-dev/pylint,2,15 min - 1 hour,0
+django__django-11734,django/django,3,15 min - 1 hour,0
+django__django-14011,django/django,2,1-4 hours,0
+django__django-14631,django/django,2,1-4 hours,0
+django__django-12325,django/django,2,1-4 hours,0
+pydata__xarray-3993,pydata/xarray,2,1-4 hours,0
+pydata__xarray-6992,pydata/xarray,2,>4 hours,0
+sphinx-doc__sphinx-10673,sphinx-doc/sphinx,3,15 min - 1 hour,0
+sympy__sympy-20438,sympy/sympy,3,15 min - 1 hour,0
+pylint-dev__pylint-4551,pylint-dev/pylint,4,1-4 hours,0
+django__django-15103,django/django,2,15 min - 1 hour,0
+sympy__sympy-13091,sympy/sympy,21,15 min - 1 hour,0
+django__django-11885,django/django,2,1-4 hours,0
+sphinx-doc__sphinx-8593,sphinx-doc/sphinx,2,15 min - 1 hour,0
+django__django-14315,django/django,2,<15 min fix,0
+sphinx-doc__sphinx-7462,sphinx-doc/sphinx,2,<15 min fix,0
+django__django-12155,django/django,2,15 min - 1 hour,0
+astropy__astropy-13398,astropy/astropy,4,1-4 hours,0
+sympy__sympy-14248,sympy/sympy,3,1-4 hours,0
+sphinx-doc__sphinx-7590,sphinx-doc/sphinx,3,>4 hours,0
+sympy__sympy-16597,sympy/sympy,6,1-4 hours,0

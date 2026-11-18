@@ -1,0 +1,34 @@
+2026-11-18 11:19:12,143 - minisweagent - INFO - Loading dataset princeton-nlp/SWE-Bench_Verified, split test...
+2026-11-18 11:19:14,531 - minisweagent - INFO - Instance filter: 500 -> 10 instances
+2026-11-18 11:19:14,532 - minisweagent - INFO - Running on 10 instances...
+2026-11-18 11:19:14,532 - minisweagent - INFO - Building agent config from specs: ['swebench.yaml', 'model.model_kwargs.reasoning_effort=low', 'agent.step_limit=75', 'agent.cost_limit=0.30']
+2026-11-18 11:19:15,881 - minisweagent.environment - DEBUG - Starting container with command: docker run -d --name minisweagent-5c5ee4a1 -w /testbed --rm docker.io/swebench/sweb.eval.x86_64.django_1776_django-11532:latest sleep 2h
+2026-11-18 11:19:15,883 - minisweagent.environment - DEBUG - Starting container with command: docker run -d --name minisweagent-e86235ef -w /testbed --rm docker.io/swebench/sweb.eval.x86_64.django_1776_django-13195:latest sleep 2h
+2026-11-18 11:19:16,355 - minisweagent.environment - INFO - Started container minisweagent-5c5ee4a1 with ID 284db9713e5137a37071493f66b1bffebd6e2f5843c52c476bcc48cd15a424a5
+2026-11-18 11:19:16,360 - minisweagent.environment - INFO - Started container minisweagent-e86235ef with ID 085783ca0ed39cb796a42088105eba1eb810c88ffaed867175327a4b4f9aaff4
+2026-11-18 11:19:47,673 - minisweagent - INFO - Saved trajectory to '/Users/fireblast/3rd_Semester/NCA/nca-project/local/runs/luna_verified_pilot/django__django-13195/django__django-13195.traj.json'
+2026-11-18 11:19:47,681 - minisweagent.environment - DEBUG - Starting container with command: docker run -d --name minisweagent-1bf5ce55 -w /testbed --rm docker.io/swebench/sweb.eval.x86_64.django_1776_django-13212:latest sleep 2h
+2026-11-18 11:19:47,838 - minisweagent.environment - INFO - Started container minisweagent-1bf5ce55 with ID 497442f3f561237de878f766c92f73d466d2dbec0190294b3f25b4fed11942e7
+2026-11-18 11:19:50,826 - minisweagent - INFO - Saved trajectory to '/Users/fireblast/3rd_Semester/NCA/nca-project/local/runs/luna_verified_pilot/django__django-11532/django__django-11532.traj.json'
+2026-11-18 11:19:50,835 - minisweagent.environment - DEBUG - Starting container with command: docker run -d --name minisweagent-134f2a06 -w /testbed --rm docker.io/swebench/sweb.eval.x86_64.django_1776_django-13512:latest sleep 2h
+2026-11-18 11:19:51,000 - minisweagent.environment - INFO - Started container minisweagent-134f2a06 with ID 2144860b0c92afc5719c39621a3b12f21ba62be06f188a1bd5cb76697f702607
+2026-11-18 11:20:21,011 - minisweagent - INFO - Saved trajectory to '/Users/fireblast/3rd_Semester/NCA/nca-project/local/runs/luna_verified_pilot/django__django-13512/django__django-13512.traj.json'
+2026-11-18 11:20:21,018 - minisweagent.environment - DEBUG - Starting container with command: docker run -d --name minisweagent-e6970365 -w /testbed --rm docker.io/swebench/sweb.eval.x86_64.django_1776_django-14376:latest sleep 2h
+2026-11-18 11:20:21,167 - minisweagent.environment - INFO - Started container minisweagent-e6970365 with ID f84a2d889b39047af5909d580c60a7d387589a9027aa9692409abe392655b06f
+2026-11-18 11:20:21,827 - minisweagent - INFO - Saved trajectory to '/Users/fireblast/3rd_Semester/NCA/nca-project/local/runs/luna_verified_pilot/django__django-13212/django__django-13212.traj.json'
+2026-11-18 11:20:21,833 - minisweagent.environment - DEBUG - Starting container with command: docker run -d --name minisweagent-07ba9880 -w /testbed --rm docker.io/swebench/sweb.eval.x86_64.django_1776_django-16263:latest sleep 2h
+2026-11-18 11:20:21,959 - minisweagent.environment - INFO - Started container minisweagent-07ba9880 with ID 523b38867a2647359b46ffa72f9493117ccaf9ebb68e9fe873c563064457013e
+2026-11-18 11:20:36,806 - minisweagent - INFO - Saved trajectory to '/Users/fireblast/3rd_Semester/NCA/nca-project/local/runs/luna_verified_pilot/django__django-14376/django__django-14376.traj.json'
+2026-11-18 11:20:36,812 - minisweagent.environment - DEBUG - Starting container with command: docker run -d --name minisweagent-dc6deea0 -w /testbed --rm docker.io/swebench/sweb.eval.x86_64.matplotlib_1776_matplotlib-24870:latest sleep 2h
+2026-11-18 11:20:36,996 - minisweagent.environment - INFO - Started container minisweagent-dc6deea0 with ID f54cc9cbbbf876703891d40e6982e42794fdc8102a90f0de454b56e0bf13e7af
+2026-11-18 11:21:04,864 - minisweagent - INFO - Saved trajectory to '/Users/fireblast/3rd_Semester/NCA/nca-project/local/runs/luna_verified_pilot/django__django-16263/django__django-16263.traj.json'
+2026-11-18 11:21:04,871 - minisweagent.environment - DEBUG - Starting container with command: docker run -d --name minisweagent-3b71826c -w /testbed --rm docker.io/swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-5840:latest sleep 2h
+2026-11-18 11:21:05,049 - minisweagent.environment - INFO - Started container minisweagent-3b71826c with ID 2cd4848684658095cd475e8d675a6d91f7be05cbb31eabc3d091bb8901eb38c4
+2026-11-18 11:21:09,368 - minisweagent - INFO - Saved trajectory to '/Users/fireblast/3rd_Semester/NCA/nca-project/local/runs/luna_verified_pilot/matplotlib__matplotlib-24870/matplotlib__matplotlib-24870.traj.json'
+2026-11-18 11:21:09,377 - minisweagent.environment - DEBUG - Starting container with command: docker run -d --name minisweagent-33a289e0 -w /testbed --rm docker.io/swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-8399:latest sleep 2h
+2026-11-18 11:21:09,557 - minisweagent.environment - INFO - Started container minisweagent-33a289e0 with ID 4af761c967047832ec9899349ea23200dcaa6bb3a69199b41cbd92b55109b0e8
+2026-11-18 11:21:31,010 - minisweagent - INFO - Saved trajectory to '/Users/fireblast/3rd_Semester/NCA/nca-project/local/runs/luna_verified_pilot/pytest-dev__pytest-8399/pytest-dev__pytest-8399.traj.json'
+2026-11-18 11:21:31,020 - minisweagent.environment - DEBUG - Starting container with command: docker run -d --name minisweagent-6f3b90f3 -w /testbed --rm docker.io/swebench/sweb.eval.x86_64.sphinx-doc_1776_sphinx-9461:latest sleep 2h
+2026-11-18 11:21:31,163 - minisweagent.environment - INFO - Started container minisweagent-6f3b90f3 with ID 7fb53a7ee496085e8bab07cb368a76696e7090cf8751fd819c5977014efcf2ad
+2026-11-18 11:21:40,751 - minisweagent - INFO - Saved trajectory to '/Users/fireblast/3rd_Semester/NCA/nca-project/local/runs/luna_verified_pilot/pytest-dev__pytest-5840/pytest-dev__pytest-5840.traj.json'
+2026-11-18 11:22:06,861 - minisweagent - INFO - Saved trajectory to '/Users/fireblast/3rd_Semester/NCA/nca-project/local/runs/luna_verified_pilot/sphinx-doc__sphinx-9461/sphinx-doc__sphinx-9461.traj.json'

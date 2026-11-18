@@ -1,0 +1,12 @@
+instance                                        cost $  calls  exit_status
+django__django-11532                            0.0014      8  Submitted
+django__django-13195                            0.0015      7  Submitted
+django__django-13212                            0.0034     10  Submitted
+django__django-13512                            0.0019     10  Submitted
+django__django-14376                            0.0007      5  Submitted
+django__django-16263                            0.0026     10  Submitted
+matplotlib__matplotlib-24870                    0.0019      9  Submitted
+pytest-dev__pytest-5840                         0.0023      9  Submitted
+pytest-dev__pytest-8399                         0.0012      7  Submitted
+sphinx-doc__sphinx-9461                         0.0023     12  Submitted
+TOTAL 10 instances: $0.0193  mean $0.0019/instance
