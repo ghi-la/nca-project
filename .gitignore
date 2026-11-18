@@ -15,3 +15,5 @@ local/mining/cache/
 local/validation/nca-tasks/_logs/
 local/validation/nca-tasks/_work/
 local/validation/nca-tasks/_rejected/
+local/rating/_to_delete/
+local/rating/.condensed_tmp.txt
