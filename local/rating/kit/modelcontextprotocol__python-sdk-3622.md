@@ -1,0 +1,211 @@
+# modelcontextprotocol__python-sdk-3622
+
+- repo: `modelcontextprotocol/python-sdk`, created: 2026-10-02, base_commit: `08095791f0c8`
+- PR: https://github.com/modelcontextprotocol/python-sdk/pull/3622
+- issue: https://github.com/modelcontextprotocol/python-sdk/issues/3598
+- FAIL_TO_PASS: 1 tests, PASS_TO_PASS: 15 tests, collection_error: **no**
+
+## 1. Issue (what the agent sees)
+
+Server TokenHandler rejects the jwt-bearer (ID-JAG) grant from public CIMD clients, which the enterprise-managed authorization extension permits
+
+### Problem
+
+With `identity_assertion_enabled=True`, `TokenHandler` rejects every `urn:ietf:params:oauth:grant-type:jwt-bearer` request from a client that has no stored `client_secret`:
+
+```python
+# mcp/server/auth/handlers/token.py
+if not client_info.client_secret:
+    return self.response(
+        TokenErrorResponse(
+            error="unauthorized_client",
+            error_description="The JWT bearer grant requires a confidential client",
+        )
+    )
+```
+
+A client identified by a Client ID Metadata Document (CIMD) cannot hold a shared secret (CIMD forbids `client_secret_*`), so the only methods open to it are `none` and `private_key_jwt`. Since `ClientAuthenticator` does not implement `private_key_jwt`, a CIMD client can never complete the ID-JAG exchange against an SDK-based authorization server.
+
+This blocks real clients. At least one widely deployed MCP client documents its enterprise-managed authorization token request as carrying only `grant_type`, `assertion`, `client_id` (a CIMD URL), `scope` and `resource`, with no client secret and no client assertion.
+
+### What the extension spec says
+
+`modelcontextprotocol/ext-auth`, `specification/stable/enterprise-managed-authorization.mdx`, section 5 (Access Token Request):
+
+> The MCP Client authenticates with its credentials as registered with the Resource Authorization Server.
+>
+> If the MCP Client is not pre-registered with the Resource Authorization Server, then it can use its Client ID Metadata Document as its client ID, and optionally authenticate using private_key_jwt.
+
+Its example request has no client authentication at all:
+
+```
+grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer
+&assertion=eyJhbGciOiJIUzI1NiIsI...
+&client_id=https://client.example.com/client.json
+```
+
+So for a CIMD client, client authentication at this step is optional. The current check is stricter than the spec and turns away the case the spec calls out by name.
+
+### Expected
+
+A CIMD client with `token_endpoint_auth_method="none"` can exchange a valid ID-JAG issued for its `client_id`. Pre-registered clients keep today's behavior (they must authenticate as registered).
+
+### Related
+
+- #2260 / #2261 (`none` missing from `token_endpoint_auth_methods_supported`)
+- #1842 / #1846 (`none` handling in `ClientAuthenticator`)
+
+
+
+AI disclosure: I used an AI coding assistant to draft this issue; I have reviewed it and can answer for it.
+
+## 2. Gold patch
+
+```diff
+diff --git a/docs/client/identity-assertion.md b/docs/client/identity-assertion.md
+index 9e18bcbfe5..fe891143dc 100644
+--- a/docs/client/identity-assertion.md
++++ b/docs/client/identity-assertion.md
+@@ -59,7 +59,7 @@ The extension does not demand this; it is a deliberately stricter choice. This c
+ 
+ ### A confidential client
+ 
+-`client_secret` is required; the constructor raises `ValueError` without one. The IETF profile underneath [SEP-990](https://github.com/modelcontextprotocol/modelcontextprotocol/issues/990) reserves this grant for confidential clients, SEP-990 requires the client to authenticate, and this SDK enforces both by insisting on a shared secret. `token_endpoint_auth_method` picks where it travels: `client_secret_post` (the default, in the form body) or `client_secret_basic` (an HTTP Basic header). The profile also permits `private_key_jwt`; this provider does not support it.
++`client_secret` is required; the constructor raises `ValueError` without one. The IETF profile underneath [SEP-990](https://github.com/modelcontextprotocol/modelcontextprotocol/issues/990) recommends this grant for confidential clients only, and [RFC 7521](https://datatracker.ietf.org/doc/html/rfc7521) leaves that policy to the authorization server. This SDK takes the conservative reading on both sides: the built-in authorization server refuses a client that has no shared secret, and this provider insists on one. `token_endpoint_auth_method` picks where it travels: `client_secret_post` (the default, in the form body) or `client_secret_basic` (an HTTP Basic header). The profile also permits `private_key_jwt`; this provider does not support it.
+ 
+ !!! tip
+     Read `client_secret` from the environment or a secret manager, never from source control.
+@@ -86,6 +86,7 @@ The SDK can also *be* the authorization server: `create_auth_routes` returns the
+ 
+ * `identity_assertion_enabled=True` gates everything. Off, which is the default, `/token` answers this grant with `unsupported_grant_type` even if you implemented the hook, and the metadata does not mention it. On, the metadata gains the `jwt-bearer` grant type and lists `urn:ietf:params:oauth:grant-profile:id-jag` in `authorization_grant_profiles_supported`, the field the extension uses to advertise support. (This SDK's client never reads it: it is provisioned for one issuer and simply asks.)
+ * **`exchange_identity_assertion`** is the hook. Before it runs, the SDK has authenticated the client, refused public clients, and refused clients whose registration does not list the grant. You get an `IdentityAssertionParams` (the raw `assertion`, the requested `scopes` and `resource`) and return a plain `OAuthToken`.
++* Refusing public clients is SDK policy, not a spec requirement. The built-in server authenticates clients by shared secret only: it has no `private_key_jwt` support and doesn't resolve Client ID Metadata Documents yet ([#1801](https://github.com/modelcontextprotocol/python-sdk/issues/1801)), so a client identified by one can't use this grant here. A deployment that wants a different policy can swap the `/token` route that `create_auth_routes` returns for its own.
+ * Dynamic client registration refuses this grant unconditionally, so `get_client` here serves a hand-provisioned client. An ID-JAG client cannot register itself into existence.
+ * Half the class is refusals. `OAuthAuthorizationServerProvider` is the *whole* authorization server, so it also asks for the authorization-code flow; a server that signs users in as well implements those for real, and this one has exactly one door.
+ 
+diff --git a/examples/snippets/clients/identity_assertion_client.py b/examples/snippets/clients/identity_assertion_client.py
+index a1291ee4d1..39635a3fb9 100644
+--- a/examples/snippets/clients/identity_assertion_client.py
++++ b/examples/snippets/clients/identity_assertion_client.py
+@@ -8,7 +8,7 @@
+ Obtaining the ID-JAG (logging into the IdP and the leg-1 exchange against it) is deployment-specific
+ and out of scope for the SDK; supply it through the `assertion_provider` callback. The callback
+ receives the authorization server's issuer (the ID-JAG `aud`) and the MCP server's resource
+-identifier (the ID-JAG `resource` claim). SEP-990 requires a confidential client, so a client secret
++identifier (the ID-JAG `resource` claim). The provider requires a confidential client, so a client secret
+ is mandatory, and `issuer` is the authorization server the credentials are provisioned for - the
+ provider fetches metadata from that issuer's well-known and never asks the resource server which AS
+ to use.
+diff --git a/examples/snippets/servers/identity_assertion_server.py b/examples/snippets/servers/identity_assertion_server.py
+index 9406111f8b..410d96a5ff 100644
+--- a/examples/snippets/servers/identity_assertion_server.py
++++ b/examples/snippets/servers/identity_assertion_server.py
+@@ -50,7 +50,7 @@ class IdentityAssertionProvider(OAuthAuthorizationServerProvider[AuthorizationCo
+ 
+     def __init__(self) -> None:
+         self.access_tokens: dict[str, AccessToken] = {}
+-        # SEP-990 clients are pre-registered out of band (DCR refuses the grant) and must be
++        # ID-JAG clients here are pre-registered out of band (DCR refuses the grant) and must be
+         # confidential. `get_client` must return them, or the token endpoint 401s before the
+         # exchange runs. Real deployments load these from their own store.
+         self.clients: dict[str, OAuthClientInformationFull] = {
+diff --git a/src/mcp/client/auth/extensions/identity_assertion.py b/src/mcp/client/auth/extensions/identity_assertion.py
+index 35e48c03fa..5e715cb83a 100644
+--- a/src/mcp/client/auth/extensions/identity_assertion.py
++++ b/src/mcp/client/auth/extensions/identity_assertion.py
+@@ -104,7 +104,7 @@ def __init__(
+             server_url: The MCP server URL.
+             storage: Token storage implementation.
+             client_id: The OAuth client ID registered with the MCP authorization server.
+-            client_secret: The client secret. SEP-990 section 5.1 requires a confidential client.
++            client_secret: The client secret. This provider supports confidential clients only.
+             issuer: The issuer identifier of the MCP authorization server this client is provisioned
+                 for. Authorization-server metadata is fetched from this issuer's well-known and the
+                 ID-JAG and secret are sent only to its token endpoint.
+@@ -115,7 +115,7 @@ def __init__(
+                 (default) or `client_secret_basic`.
+         """
+         if not client_secret:
+-            raise ValueError("client_secret is required: SEP-990 mandates a confidential client")
++            raise ValueError("client_secret is required: this provider supports confidential clients only")
+         if not issuer:
+             raise ValueError("issuer is required: the authorization server is configuration, not discovery")
+         self._resource = resource_url_from_server_url(server_url)
+diff --git a/src/mcp/server/auth/handlers/register.py b/src/mcp/server/auth/handlers/register.py
+index 7fb14b2c43..621a0f37d6 100644
+--- a/src/mcp/server/auth/handlers/register.py
++++ b/src/mcp/server/auth/handlers/register.py
+@@ -91,9 +91,9 @@ async def handle(self, request: Request) -> Response:
+                 status_code=400,
+             )
+ 
+-        # SEP-990 §5.1 / draft-ietf-oauth-identity-assertion-authz-grant §8.1: the ID-JAG flow is
+-        # for confidential clients provisioned out of band. Refuse to grant it through DCR so a
+-        # self-registered client cannot reach the identity-assertion provider hook.
++        # SDK policy: the ID-JAG flow is for confidential clients (a SHOULD in
++        # draft-ietf-oauth-identity-assertion-authz-grant-04 §9.1) provisioned out of band. Refuse to
++        # grant it through DCR so a self-registered client cannot reach the provider hook.
+         if JWT_BEARER_GRANT_TYPE in client_metadata.grant_types:
+             return PydanticJSONResponse(
+                 content=RegistrationErrorResponse(
+diff --git a/src/mcp/server/auth/handlers/token.py b/src/mcp/server/auth/handlers/token.py
+index 0e644c378a..00df115573 100644
+--- a/src/mcp/server/auth/handlers/token.py
++++ b/src/mcp/server/auth/handlers/token.py
+@@ -248,10 +248,10 @@ async def handle(self, request: Request):
+                         )
+                     )
+ 
+-                # SEP-990 §5.1: only confidential clients may present an ID-JAG. ClientAuthenticator
+-                # already rejects a secret-based method with no stored secret; this additionally
+-                # rejects the public `none` method so an unauthenticated client never reaches the
+-                # provider hook.
++                # SDK policy, adopting the SHOULD in draft-ietf-oauth-identity-assertion-authz-grant-04
++                # §9.1: only confidential clients may present an ID-JAG. ClientAuthenticator already
++                # rejects a secret-based method with no stored secret; this additionally rejects the
++                # public `none` method so an unauthenticated client never reaches the provider hook.
+                 if not client_info.client_secret:
+                     # RFC 6749 §5.2: the client authenticated but is not permitted this grant, so
+                     # unauthorized_client (not invalid_client, which is for failed authentication).
+```
+
+## 3. Test patch
+
+```diff
+diff --git a/tests/client/auth/extensions/test_identity_assertion.py b/tests/client/auth/extensions/test_identity_assertion.py
+index d4c965edc5..f4f9b6080c 100644
+--- a/tests/client/auth/extensions/test_identity_assertion.py
++++ b/tests/client/auth/extensions/test_identity_assertion.py
+@@ -11,6 +11,7 @@
+ 
+ import httpx2
+ import pytest
++from inline_snapshot import snapshot
+ 
+ from mcp.client.auth import OAuthFlowError, OAuthTokenError
+ from mcp.client.auth.extensions.identity_assertion import IdentityAssertionOAuthProvider, _origin
+@@ -377,7 +378,7 @@ def test_empty_client_secret_is_rejected() -> None:
+     async def assertion_provider(audience: str, resource: str) -> str:
+         raise NotImplementedError
+ 
+-    with pytest.raises(ValueError, match="client_secret is required"):
++    with pytest.raises(ValueError) as exc_info:
+         IdentityAssertionOAuthProvider(
+             server_url=f"{RS}/mcp",
+             storage=InMemoryStorage(),
+@@ -387,6 +388,10 @@ async def assertion_provider(audience: str, resource: str) -> str:
+             assertion_provider=assertion_provider,
+         )
+ 
++    assert str(exc_info.value) == snapshot(
++        "client_secret is required: this provider supports confidential clients only"
++    )
++
+ 
+ def test_empty_issuer_is_rejected() -> None:
+     async def assertion_provider(audience: str, resource: str) -> str:
+```
+
+## 4. FAIL_TO_PASS tests
+
+- `tests/client/auth/extensions/test_identity_assertion.py::test_empty_client_secret_is_rejected`

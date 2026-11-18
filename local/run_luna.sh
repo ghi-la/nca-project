@@ -9,6 +9,7 @@
 #   ITERATIONS=3 ...                                # repeat the run (each iteration costs again!)
 #   EVAL=0 ...                                      # inference only, no harness eval
 #   SUBSET=/path/to/dataset SPLIT=test ...          # our own tasks (need image_name per instance)
+#   our benchmark: SUBSET=<nca-tasks>/dataset SPLIT=test TASK_REPO=<nca-tasks> SLICE=0:25 OUT=luna_nca ./run_luna.sh
 #
 # Based on the TA template (nca-project/scratch/template-nca/eval.sh) and Alessandro's
 # 1_evaluation/run_gpt_5_mini.sh:
@@ -44,6 +45,9 @@ OUT="${OUT:-}"
 EVAL="${EVAL:-1}"
 EVAL_JOBS="${EVAL_JOBS:-2}"
 DRY_RUN="${DRY_RUN:-0}"
+# task repo the harness builds images from: swe-bench-tasks for Verified,
+# <nca-project>/local/validation/nca-tasks for our benchmark
+TASK_REPO="${TASK_REPO:-$SWEB_DIR/swe-bench-tasks}"
 
 if [[ -z "$OUT" ]]; then
   echo "ERROR: set OUT=<run name> (results go to $RUNS_DIR/<OUT>)" >&2; exit 1
@@ -95,7 +99,7 @@ eval_cmd() {  # $1 = output dir, $2 = run id
     -p "$1/preds.json"
     --run-id "$2"
     -j "$EVAL_JOBS"
-    --task-repo "$SWEB_DIR/swe-bench-tasks"
+    --task-repo "$TASK_REPO"
   )
 }
 
@@ -121,7 +125,7 @@ echo "== Config"
 echo "  model=$MODEL effort=$REASONING_EFFORT temperature='${TEMPERATURE}' verbosity='${VERBOSITY}' steps=$STEP_LIMIT"
 echo "  cost: \$$INSTANCE_COST_LIMIT/instance, \$$GLOBAL_COST_LIMIT cap per iteration, iterations=$ITERATIONS"
 echo "  subset=$SUBSET split=$SPLIT filter='${FILTER}' slice='${SLICE}' workers=$WORKERS"
-echo "  out=$RUNS_DIR/$OUT  eval=$EVAL"
+echo "  out=$RUNS_DIR/$OUT  eval=$EVAL  task_repo=$TASK_REPO"
 
 for i in $(seq 1 "$ITERATIONS"); do
   OUT_DIR="$RUNS_DIR/$OUT"
