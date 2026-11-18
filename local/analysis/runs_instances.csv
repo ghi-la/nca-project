@@ -2,3 +2,13 @@ run,instance_id,resolved,exit,cost,calls
 luna_pilot,astropy__astropy-12907,True,Submitted,0.001415915,8
 luna_pilot,django__django-11099,True,Submitted,0.0010176999999999999,7
 luna_single,sympy__sympy-20590,True,Submitted,0.0023233800000000003,12
+luna_verified_pilot,django__django-11532,False,Submitted,0.00136799,8
+luna_verified_pilot,django__django-13195,False,Submitted,0.0015221149999999999,7
+luna_verified_pilot,django__django-13212,False,Submitted,0.0034351349999999998,10
+luna_verified_pilot,django__django-13512,False,Submitted,0.0018638849999999998,10
+luna_verified_pilot,django__django-14376,False,Submitted,0.000742875,5
+luna_verified_pilot,django__django-16263,False,Submitted,0.0026311849999999994,10
+luna_verified_pilot,matplotlib__matplotlib-24870,False,Submitted,0.0018842950000000002,9
+luna_verified_pilot,pytest-dev__pytest-5840,False,Submitted,0.002290815,9
+luna_verified_pilot,pytest-dev__pytest-8399,True,Submitted,0.0012204549999999998,7
+luna_verified_pilot,sphinx-doc__sphinx-9461,False,Submitted,0.0023345700000000002,12
