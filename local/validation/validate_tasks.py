@@ -164,7 +164,8 @@ RUN git status --porcelain --untracked-files=all | sed -n 's/^?? //p' >> .git/in
 
 def render_eval_sh(task: dict, spec: dict) -> tuple[str | None, str]:
     modules, existing, other = analyse_test_patch(task["test_patch"])
-    tests = list(modules)
+    skip = tuple(spec.get("exclude_tests", []))
+    tests = [m for m in modules if not (skip and m.startswith(skip))]
     if spec.get("default_tests") and (other or not tests):
         tests += [t for t in spec["default_tests"] if t not in tests]
     if not tests:

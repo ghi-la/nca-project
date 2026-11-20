@@ -15,6 +15,7 @@
 #                 --continue-on-collection-errors: one test file that fails to import must not
 #                 stop the other files (their tests would wrongly end up in FAIL_TO_PASS).
 #   default_tests test files to run when the test patch only changes data/fixtures
+#   exclude_tests path prefixes never run (tests that need external services: brokers, docker, ...)
 #   env           extra ENV for the image
 #
 # Repos with a uv.lock install the exact locked dependencies (uv export --frozen);
@@ -43,6 +44,7 @@ celery/celery:
   install:
     - uv pip install --system --exclude-newer {exclude_newer} -e . -r requirements/test.txt -r requirements/test-ci-default.txt
   test_cmd: pytest -rA --color=no -p no:cacheprovider --continue-on-collection-errors
+  exclude_tests: [t/integration/, t/smoke/]   # need a real broker / docker; only unit tests
   env:
     BOTO_CONFIG: /dev/null
     PYTHONIOENCODING: UTF-8
